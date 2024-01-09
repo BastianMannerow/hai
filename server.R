@@ -70,9 +70,8 @@ shinyServer(function(input, output, session) {
   ## visualize data
   output$plot1 <- renderPlot({
     ggplot(df_ist_ausz, aes(value, Text)) + 
-      # Zeichne zuerst einen größeren Punkt mit weißer Füllung und rotem Rand
+      # outlines the selected points with a specific colour (red)
       geom_point(data = selected(), aes(value, Text), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      # Zeichne dann die ursprünglichen Punkte darüber
       geom_point(aes(colour = Text), size = 4) +
       # to color the selected points red
       # geom_point(data=selected(), colour= "red", size = 4)+
