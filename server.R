@@ -70,9 +70,12 @@ shinyServer(function(input, output, session) {
   ## visualize data
   output$plot1 <- renderPlot({
     ggplot(df_ist_ausz, aes(value, Text)) + 
-      geom_jitter(aes(colour = Text), alpha = 0.8, height = 0, size = 4) +
+      # Zeichne zuerst einen größeren Punkt mit weißer Füllung und rotem Rand
+      geom_point(data = selected(), aes(value, Text), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
+      # Zeichne dann die ursprünglichen Punkte darüber
+      geom_point(aes(colour = Text), size = 4) +
       # to color the selected points red
-      geom_point(data=selected(), colour= "red", size = 4)+
+      # geom_point(data=selected(), colour= "red", size = 4)+
       labs(title = "Verteilung der Ist-Auszahlungen 2010 bis 2021 (in Euro)",
            subtitle = "Produkt 126001 - Feuerwehr",
            caption = "Daten der Hansestadt Lübeck") +
