@@ -3,6 +3,7 @@
 #library(easypackages)
 #libraries("shiny", "tidyverse", "sysfonts", "showtext", "dplyr", "reshape2", "readxl", "DT")
 library(shiny)
+library(shinyWidgets)
 library(tidyverse)
 library(sysfonts)
 library(showtext)
@@ -34,55 +35,73 @@ ui <- fluidPage(
   titlePanel("Ausreißer App"),
   p("Bitte markieren Sie in der Graphik, welche Erträge Sie als Ausreißer bewerten. Hierfür klicken Sie einfach auf den jeweiligen Punkt."),
   
-  navbarPage("",
-             tabPanel("Version 1",
-                      fluidPage(
-                        p("Hinweis: Hier befinden sich alle Datenpunkte auf einer Skala zwischen 0 und 1000."),
-                        wellPanel(
-                        div(
-                          style = "position:relative",
-                          # set height of plot to 400px, otherwise problems with hover function as sometimes the hover$coords_css info was
-                          # not the same as the image size created by plotOutput
-                          plotOutput("plot1", height = "400px", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
-                          uiOutput("hover_info", style = "pointer-events: none")
-                        ),
-                        dataTableOutput('mydata'),
-                        actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
-                        actionButton("remove", "Eintrag löschen", style = "margin-top: 20px"),
-                      ))
-             ),
-             tabPanel("Version 2",
-                      fluidPage(
-                        p("Hinweis: Hier handelt es sich um dieselbe Datenverteilung wie in Version 1, nur dass \nes zwei Datenpunkte gibt, die deutlich größer sind. Deshalb \nverschiebt sich die Skala von 0 bis 1000 zu 0 bis 15000."),
-                        wellPanel(
-                        div(
-                          style = "position:relative",
-                          plotOutput("plot2", height = "400px", width = "100%"))
-                      ))),
-             tabPanel("Version 3",
-                      fluidPage(
-                        p("Hinweis: Hier wird für jede Haushaltsposition des Produkts eine eigene Graphik mit individueller Skala erstellt."),
-                        wellPanel(
-                          div(
-                            style = "position:relative",
-                            plotOutput("plot3", height = "150px", width = "100%"),
-                            plotOutput("plot4", height = "150px", width = "100%"),
-                            plotOutput("plot5", height = "150px", width = "100%")
-                          )
-                        )
-                      )),
-             tabPanel("Version 4",
-                      fluidPage(
-                        p("Hinweis: Hier werden alle Auszahlungswerte für das Produkt aufgelistet."),
-                        wellPanel(
-                          div(
-                            style = "position:relative",
-                            plotOutput("plot6", height = "1200px", width = "100%"),
-                          )
-                        )
-                      ))
-             
+  fluidPage(
+    fluidRow(
+      column(3,
+        p("Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an."),
+        radioGroupButtons(
+          inputId = "pickArt",
+          label = "Wählen Sie die Art der Beträge.",
+          choices = c("Ist-Werte", 
+                      "Plan-Werte"),
+          justified = TRUE
+        ),
+        pickerInput(
+          inputId = "pickProdukt",
+          label = "Wählen Sie ein Produkt.",
+          choices = c("A", "B", "C"),
+        ),
+        pickerInput(
+          inputId = "pickTitel",
+          label = "Wählen Sie die Titel. ",
+          choices = c("a","b","c"),
+          multiple = TRUE,
+          selected = c("a","b","c"),
+          options = list(
+            'actions-box' = TRUE,
+            'deselect-all-text' = "Alle abwählen",
+            'select-all-text' = "Alle auswählen",
+            'none-selected-text' = "Keine Titel ausgewählt")
+        ),
+        sliderTextInput(
+          inputId = "pickZeitraum",
+          label = "Wählen Sie den Zeitraum.", 
+          choices = c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021),
+          selected = c(2010,2021)
+        ),
+        sliderTextInput(
+          inputId = "pickWertebereich",
+          label = "Wählen Sie den angezeigten Wertebereich.", 
+          choices = c(0,100,1000,10000,50000,100000),
+          selected = c(0,100000)
+        )
+      ),
+      column(9,
+        wellPanel(
+        div(
+          style = "position:relative",
+          # set height of plot to 400px, otherwise problems with hover function as sometimes the hover$coords_css info was
+          # not the same as the image size created by plotOutput
+          plotOutput("plot1", height = "400px", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+          uiOutput("hover_info", style = "pointer-events: none")
+        )
+      ))
+    ),
+  fluidRow(
+    column(6,
+      wellPanel(
+      dataTableOutput('mydata'),
+      actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
+      actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
+      )
+    ),
+    column(6,
+      wellPanel(
+      p("Platzhalter für weitere Graphik")
+      )
+    )
   )
-)
+  )
 
+)
 
