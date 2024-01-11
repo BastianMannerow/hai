@@ -19,34 +19,24 @@ showtext_auto()
 options(scipen = 999)
 
 ### get data
-## Auszahlungen Part 1
-#df_ist_ausz <- read_xlsx("/Users/adhungel/Documents/Projekte/HAI/HL_HAI/126001_Ist.xlsx")
-#df_ist_ausz <- read_xlsx("/Users/leawatermann/Desktop/Uni/Hiwi/R _Aufgabe/hai/126001_Ist.xlsx")
-df_ist_auszX <- read_excel("Testdata.xlsx")
-df_ist_auszX <- df_ist_auszX %>%
-  ## subset "Auszahlungen" (first 20 rows)
-  slice(97:137)
-## Delete rows with only zeros
-df_ist_ausz <- df_ist_auszX[!apply(df_ist_auszX[, -1], 1, function(row) all(row == 0)), ] %>%
-  ## create subsets to reduce complexity of the plot
-  slice(1:10) %>%
-  ## Melt data for jitter plot
-  melt(.,  id.vars = "Text", variable.name = 'series')
+df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
+df_soll <- slice(df_soll, 1:20) # subset (first 20 rows), can be uncommented later
+df_scatter <- melt(df_soll, id = "Gesamttitel", variable.name = "year") # melt data for scatter plot
 
 ### set up server
 shinyServer(function(input, output, session) {
   
   ## visualize data
   output$plot1 <- renderPlot({
-    ggplot(df_ist_ausz, aes(value, Text)) + 
+    ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
       # outlines the selected points with a specific colour (red)
-      geom_point(data = selected(), aes(value, Text), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      geom_point(aes(colour = Text), size = 4) +
+      geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
+      geom_point(aes(colour = Gesamttitel), size = 4) +
       # to color the selected points red
       # geom_point(data=selected(), colour= "red", size = 4)+
-      labs(title = "Verteilung der Ist-Auszahlungen 2010 bis 2021 (in Euro)",
-           subtitle = "Produkt 126001 - Feuerwehr",
-           caption = "Daten der Hansestadt Lübeck") +
+      labs(title = "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)",
+           subtitle = "Einzelplan 14",
+           caption = "Daten des Landes Schleswig-Holstein") +
       theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
             plot.subtitle = element_text(family = "Roboto", size = 18),
             panel.background = element_rect(fill = "grey96"),
@@ -68,7 +58,7 @@ shinyServer(function(input, output, session) {
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
     hover <- input$plot_hover
-    point <- nearPoints(df_ist_ausz, hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+    point <- nearPoints(df_scatter, hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
     
     # calculate horizontal and vertical point position inside the image as percent of total dimensions
@@ -98,8 +88,8 @@ shinyServer(function(input, output, session) {
     # actual tooltip created as wellPanel
     wellPanel(
       style = style,
-      p(HTML(paste0("<b> Titel: </b>", point$Text, "<br/>",
-                    "<b> Jahr: </b>", point$series, "<br/>",
+      p(HTML(paste0("<b> Titel: </b>", point$Gesamttitel, "<br/>",
+                    "<b> Jahr: </b>", point$year, "<br/>",
                     "<b> Wert: </b>", point$value, "<br/>")))
     )
   })
@@ -155,16 +145,16 @@ shinyServer(function(input, output, session) {
   ## color the data from the table
   selected <- reactive({
     ## get data from rv$x to the same structure like in df_ist_ausz
-    selected_points <- rv$x %>% select(Text=Titel, series=Jahr, value=Wert)
+    selected_points <- rv$x %>% select(Gesamttitel=Titel, year=Jahr, value=Wert)
     return(selected_points)
   })
   
   ## add data to table from clicked points in plot
   observeEvent(input$clicked, {
-    pointsnear <- nearPoints(df_ist_ausz, input$clicked)
+    pointsnear <- nearPoints(df_scatter, input$clicked)
     wert <- pointsnear$value
-    jahr <- pointsnear$series
-    text <- pointsnear$Text
+    jahr <- pointsnear$year
+    text <- pointsnear$Gesamttitel
 
     rv$x <- rv$x %>% bind_rows(tibble(Titel = text, Jahr = jahr, Wert = wert, Kommentar = ""))
   })
