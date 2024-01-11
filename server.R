@@ -19,22 +19,49 @@ showtext_auto()
 options(scipen = 999)
 
 ### get data
+df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
+df_ist <- slice(df_ist, 1:20) # subset (first 20 rows), can be uncommented later
 df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
 df_soll <- slice(df_soll, 1:20) # subset (first 20 rows), can be uncommented later
-df_scatter <- melt(df_soll, id = "Gesamttitel", variable.name = "year") # melt data for scatter plot
+df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
+df_diff <- slice(df_diff, 1:20) # subset (first 20 rows), can be uncommented later
 
 ### set up server
 shinyServer(function(input, output, session) {
   
+  ## filter data
+  
+  scatterData <- reactive({
+    if (input$pickArt == "Ist-Werte"){
+      df_scatter <- melt(df_ist, id = "Gesamttitel", variable.name = "year")
+    } else if (input$pickArt == "Soll-Werte"){
+      df_scatter <- melt(df_soll, id = "Gesamttitel", variable.name = "year")
+    } else if (input$pickArt == "Differenz"){
+      df_scatter <- melt(df_diff, id = "Gesamttitel", variable.name = "year")
+    }
+    return(df_scatter)
+  })
+  
+  scatterTitle <- reactive({
+    if (input$pickArt == "Ist-Werte"){
+      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "Soll-Werte"){
+      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "Differenz"){
+      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
+    }
+    return(titel)
+  })
+  
   ## visualize data
   output$plot1 <- renderPlot({
-    ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
+    ggplot(scatterData(), aes(x = value, y = Gesamttitel)) + 
       # outlines the selected points with a specific colour (red)
       geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
       geom_point(aes(colour = Gesamttitel), size = 4) +
       # to color the selected points red
       # geom_point(data=selected(), colour= "red", size = 4)+
-      labs(title = "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)",
+      labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
            caption = "Daten des Landes Schleswig-Holstein") +
       theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),

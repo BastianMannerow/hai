@@ -42,8 +42,8 @@ ui <- fluidPage(
         radioGroupButtons(
           inputId = "pickArt",
           label = "Wählen Sie die Art der Beträge.",
-          choices = c("Ist-Werte", 
-                      "Plan-Werte"),
+          choices = c("Soll-Werte", "Ist-Werte", "Differenz"),
+          #choices = c("Soll-Werte", "Ist-Werte"),
           justified = TRUE
         ),
         pickerInput(
