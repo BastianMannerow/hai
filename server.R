@@ -55,10 +55,21 @@ shinyServer(function(input, output, session) {
   
   ## visualize data
   output$plot1 <- renderPlot({
-    ggplot(scatterData(), aes(x = value, y = Gesamttitel)) + 
+    df_scatter <- scatterData()###############
+    df_scatter$year <- as.numeric(as.character(df_scatter$year))###############
+    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
+      if (all(is.na(df$value))) {
+        return(NA)
+      } else {
+        return(max(df$year, na.rm = TRUE))
+      }
+    })
+    last_year <- max(last_years, na.rm = TRUE)###############
+    
+    ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
       # outlines the selected points with a specific colour (red)
       geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      geom_point(aes(colour = Gesamttitel), size = 4) +
+      geom_point(aes(colour = factor(year)), size = 4) + #################
       # to color the selected points red
       # geom_point(data=selected(), colour= "red", size = 4)+
       labs(title = scatterTitle(),
@@ -66,7 +77,7 @@ shinyServer(function(input, output, session) {
            caption = "Daten des Landes Schleswig-Holstein") +
       theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
             plot.subtitle = element_text(family = "Roboto", size = 18),
-            panel.background = element_rect(fill = "grey96"),
+            panel.background = element_rect(fill = "grey98"),
             axis.text.x = element_text(size = 16),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
@@ -75,9 +86,7 @@ shinyServer(function(input, output, session) {
             axis.title.y = element_blank(),
             legend.position = "none",
             plot.caption = element_text(family = "Roboto",color = "gray12", size = 14))+
-      scale_color_manual(values=c("#6B4BC7", "#197084", "#DF9E1F", "#6B4BC7", "#197084", "#DF9E1F", "#6B4BC7", "#197084",
-                                  "#DF9E1F", "#6B4BC7", "#197084", "#DF9E1F", "#6B4BC7", "#197084", "#DF9E1F", "#6B4BC7",
-                                  "#197084", "#DF9E1F", "#6B4BC7", "#197084"))
+      scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
   })
   
     
@@ -85,7 +94,7 @@ shinyServer(function(input, output, session) {
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
     hover <- input$plot_hover
-    point <- nearPoints(df_scatter, hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+    point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
     
     # calculate horizontal and vertical point position inside the image as percent of total dimensions
@@ -178,7 +187,7 @@ shinyServer(function(input, output, session) {
   
   ## add data to table from clicked points in plot
   observeEvent(input$clicked, {
-    pointsnear <- nearPoints(df_scatter, input$clicked)
+    pointsnear <- nearPoints(scatterData(), input$clicked)
     wert <- pointsnear$value
     jahr <- pointsnear$year
     text <- pointsnear$Gesamttitel
