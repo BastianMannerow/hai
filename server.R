@@ -57,6 +57,37 @@ shinyServer(function(input, output, session) {
     return(df_scatter)
   })
   
+  # Help function to analise the unfiltered data
+  originalData <- reactive({
+    df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
+    df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
+    df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
+    
+    if (input$pickArt == "Ist-Werte") {
+      melt(df_ist, id.vars = "Gesamttitel")
+    } else if (input$pickArt == "Soll-Werte") {
+      melt(df_soll, id.vars = "Gesamttitel")
+    } else {
+      melt(df_diff, id.vars = "Gesamttitel")
+    }
+  })
+  
+  # Counts data points, which are not visible
+  pointsOutsideRange <- reactive({
+    selected_values <- input$pickWertebereich
+    df_scatter <- scatterData()
+    df_original <- originalData()
+    full_range_count <- sum(df_original$value >= 0 & df_original$value <= 100000, na.rm = TRUE)
+    selected_range_count <- sum(df_scatter$value >= selected_values[1] & df_scatter$value <= selected_values[2], na.rm = TRUE)
+    filtered_out_count <- full_range_count - selected_range_count
+    filtered_out_count
+  })
+  
+  # Implements a message to warn the user about non-visible points
+  output$outOfRangeMessage <- renderUI({
+    span(style = "color: red;", paste(pointsOutsideRange(), "Datenpunkte liegen nicht im angezeigten Wertebereich."))
+  })
+  
   scatterTitle <- reactive({
     if (input$pickArt == "Ist-Werte"){
       titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
