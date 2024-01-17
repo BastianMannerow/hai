@@ -32,13 +32,28 @@ shinyServer(function(input, output, session) {
   ## filter data
   
   scatterData <- reactive({
+    # extract the time period
+    selected_years <- as.numeric(input$pickZeitraum)
+    # extract the range
+    selected_values <- input$pickWertebereich
+    
+    # differentiate between the sets of data
     if (input$pickArt == "Ist-Werte"){
-      df_scatter <- melt(df_ist, id = "Gesamttitel", variable.name = "year")
+      df_scatter <- melt(df_ist, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Soll-Werte"){
-      df_scatter <- melt(df_soll, id = "Gesamttitel", variable.name = "year")
+      df_scatter <- melt(df_soll, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Differenz"){
-      df_scatter <- melt(df_diff, id = "Gesamttitel", variable.name = "year")
+      df_scatter <- melt(df_diff, id.vars = "Gesamttitel")
     }
+    
+    # converts year columns into numeric values
+    df_scatter$year <- as.numeric(as.character(df_scatter$variable))
+    
+    # execute the filtering
+    df_scatter <- df_scatter %>%
+      filter(year >= selected_years[1] & year <= selected_years[2],
+             value >= selected_values[1] & value <= selected_values[2])
+    
     return(df_scatter)
   })
   
