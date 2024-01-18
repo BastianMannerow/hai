@@ -97,13 +97,13 @@ ui <- fluidPage(
       actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
       )
     ),
+    # the detailed view of a title
     column(6,
-      wellPanel(
-      p("Platzhalter für weitere Graphik")
-      )
+       wellPanel(
+         plotOutput("detailPlot")
+       )
     )
   )
   )
-
 )
 

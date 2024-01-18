@@ -30,7 +30,6 @@ df_diff <- slice(df_diff, 1:20) # subset (first 20 rows), can be uncommented lat
 shinyServer(function(input, output, session) {
   
   ## filter data
-  
   scatterData <- reactive({
     # extract the time period
     selected_years <- as.numeric(input$pickZeitraum)
@@ -38,16 +37,19 @@ shinyServer(function(input, output, session) {
     selected_values <- input$pickWertebereich
     
     # differentiate between the sets of data
-    if (input$pickArt == "Ist-Werte"){
-      df_scatter <- melt(df_ist, id.vars = "Gesamttitel")
+    df_scatter <- if (input$pickArt == "Ist-Werte"){
+      melt(df_ist, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Soll-Werte"){
-      df_scatter <- melt(df_soll, id.vars = "Gesamttitel")
+      melt(df_soll, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Differenz"){
-      df_scatter <- melt(df_diff, id.vars = "Gesamttitel")
+      melt(df_diff, id.vars = "Gesamttitel")
     }
     
-    # converts year columns into numeric values
-    df_scatter$year <- as.numeric(as.character(df_scatter$variable))
+    # Rename 'variable' column to 'year'
+    colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
+    
+    # convert year column into numeric values
+    df_scatter$year <- as.numeric(as.character(df_scatter$year))
     
     # execute the filtering
     df_scatter <- df_scatter %>%
@@ -88,6 +90,52 @@ shinyServer(function(input, output, session) {
     span(style = "color: red;", paste(pointsOutsideRange(), "Datenpunkte liegen nicht im angezeigten Wertebereich."))
   })
   
+  #------------------------------------------------------------------------------
+  # Button implementation
+  selectedTitle <- reactiveVal()
+  observeEvent(input$print_title, {
+    # Setzen Sie selectedTitle basierend auf dem ausgewählten Titel
+    selectedTitle(input$print_title)
+    
+    # Rendering of detailed view
+    output$detailPlot <- renderPlot({
+      # Optional - check if title was selected
+      req(selectedTitle())
+      title <- selectedTitle()
+      
+      # Get corresponding data
+      ist_values <- df_ist %>%
+        filter(Gesamttitel == title) %>%
+        gather(key = "year", value = "value_ist", -Gesamttitel)
+      soll_values <- df_soll %>%
+        filter(Gesamttitel == title) %>%
+        gather(key = "year", value = "value_soll", -Gesamttitel)
+      
+      # combines the data to analyse its difference
+      combined_df <- left_join(ist_values, soll_values, by = "year") %>%
+        mutate(difference = value_ist - value_soll,
+               fill_color = ifelse(difference < 0, "red", "green"))
+      
+      # Generate graphic
+      ggplot(combined_df, aes(x = year, y = difference, fill = fill_color)) +
+        geom_bar(stat = "identity") + # Necessary for difference
+        geom_hline(yintercept = 0, linetype = "dashed") +
+        scale_fill_identity() +
+        labs(title = paste("Detailansicht für Titel:", title), y = "Differenzwert", x = "Jahr") +
+        theme_minimal()
+    })
+  })
+  
+  # Refresh graphic
+  observeEvent(input$pickArt, {
+    output$mydata <- renderDT({
+      df <- scatterData() # Verwendung der scatterData Funktion
+      df$actions <- purrr::map_chr(df$Gesamttitel, ~ as.character(actionButton(inputId = paste0("btn_", .), label = "Print", onclick = sprintf('Shiny.setInputValue("print_title", "%s")', .))))
+      datatable(df, escape = FALSE, selection = 'none', options = list(dom = 't', paging = FALSE, ordering = FALSE))
+    })
+  })
+  
+  #------------------------------------------------------------------------------
   scatterTitle <- reactive({
     if (input$pickArt == "Ist-Werte"){
       titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
@@ -233,12 +281,11 @@ shinyServer(function(input, output, session) {
   
   ## add data to table from clicked points in plot
   observeEvent(input$clicked, {
-    pointsnear <- nearPoints(scatterData(), input$clicked)
-    wert <- pointsnear$value
-    jahr <- pointsnear$year
-    text <- pointsnear$Gesamttitel
-
-    rv$x <- rv$x %>% bind_rows(tibble(Titel = text, Jahr = jahr, Wert = wert, Kommentar = ""))
+    pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
+    if (nrow(pointsnear) > 0) {
+      pointsnear$year <- as.character(pointsnear$year)
+      rv$x <- rv$x %>% bind_rows(tibble(Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Kommentar = ""))
+    }
   })
   
   ## delete rows in data table
