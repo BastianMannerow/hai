@@ -47,16 +47,18 @@ ui <- fluidPage(
           justified = TRUE
         ),
         pickerInput(
-          inputId = "pickProdukt",
-          label = "Wählen Sie ein Produkt.",
-          choices = c("A", "B", "C"),
+          inputId = "pickKapitel",
+          label = "Wählen Sie die Kapitel. ",
+          choices = df_kapitel$Kapitel[1:3],
+          multiple = TRUE,
+          selected = df_kapitel$Kapitel[1:3]
         ),
         pickerInput(
           inputId = "pickTitel",
           label = "Wählen Sie die Titel. ",
-          choices = c("a","b","c"),
+          choices = df_zweck$Gesamttitel,
+          selected = df_zweck$Gesamttitel,
           multiple = TRUE,
-          selected = c("a","b","c"),
           options = list(
             'actions-box' = TRUE,
             'deselect-all-text' = "Alle abwählen",

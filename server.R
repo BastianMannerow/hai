@@ -20,14 +20,34 @@ options(scipen = 999)
 
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
-df_ist <- slice(df_ist, 1:20) # subset (first 20 rows), can be uncommented later
+df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
 df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
-df_soll <- slice(df_soll, 1:20) # subset (first 20 rows), can be uncommented later
+df_soll <- slice(df_soll, 21:40) # subset (20 rows), can be uncommented later
 df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
-df_diff <- slice(df_diff, 1:20) # subset (first 20 rows), can be uncommented later
+df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
+df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
+df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
+df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### set up server
 shinyServer(function(input, output, session) {
+  
+  ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
+  
+  # save current choices from pickTitel in a reactive value, to save them as selected 
+  # when pickKapitel is changed, further reading: https://stackoverflow.com/questions/60122122/shiny-observeevent-updateselectinput-inputs-resetting
+  current_titel <- reactiveVal()
+  observe({
+    current_titel(input$pickTitel)
+  })
+  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
+  observeEvent(input$pickKapitel, {
+    updatePickerInput(
+      session = session,
+      inputId = "pickTitel",
+      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
+      selected = current_titel())
+  }, ignoreInit = TRUE)
   
   ## filter data
   scatterData <- reactive({
@@ -35,6 +55,8 @@ shinyServer(function(input, output, session) {
     selected_years <- as.numeric(input$pickZeitraum)
     # extract the range
     selected_values <- input$pickWertebereich
+    # extract selected Gesamttitel
+    selected_title <- input$pickTitel
     
     # differentiate between the sets of data
     df_scatter <- if (input$pickArt == "Ist-Werte"){
@@ -43,6 +65,7 @@ shinyServer(function(input, output, session) {
       melt(df_soll, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Differenz"){
       melt(df_diff, id.vars = "Gesamttitel")
+      #df_scatter <- mutate(df_scatter, Kapitel = substr(df_scatter$Gesamttitel, start = 1, stop = 4),.before=1)
     }
     
     # Rename 'variable' column to 'year'
@@ -54,12 +77,13 @@ shinyServer(function(input, output, session) {
     # execute the filtering
     df_scatter <- df_scatter %>%
       filter(year >= selected_years[1] & year <= selected_years[2],
-             value >= selected_values[1] & value <= selected_values[2])
+             value >= selected_values[1] & value <= selected_values[2],
+             Gesamttitel %in% selected_title)
     
     return(df_scatter)
   })
   
-  # Help function to analise the unfiltered data
+  # Help function to analyse the unfiltered data
   originalData <- reactive({
     df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
     df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
