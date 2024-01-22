@@ -12,6 +12,7 @@ library(readxl)
 library(DT)
 library(scales)
 library(grid)
+library(fontawesome)
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -151,13 +152,13 @@ shinyServer(function(input, output, session) {
   })
   
   # Refresh graphic
-  observeEvent(input$pickArt, {
-    output$mydata <- renderDT({
-      df <- scatterData() # Verwendung der scatterData Funktion
-      df$actions <- purrr::map_chr(df$Gesamttitel, ~ as.character(actionButton(inputId = paste0("btn_", .), label = "Print", onclick = sprintf('Shiny.setInputValue("print_title", "%s")', .))))
-      datatable(df, escape = FALSE, selection = 'none', options = list(dom = 't', paging = FALSE, ordering = FALSE))
-    })
-  })
+  #observeEvent(input$pickArt, {
+   # output$mydata <- renderDT({
+   #   df <- scatterData() # Verwendung der scatterData Funktion
+   #   df$actions <- purrr::map_chr(df$Gesamttitel, ~ as.character(actionButton(inputId = paste0("btn_", .), label = "Print", onclick = sprintf('Shiny.setInputValue("print_title", "%s")', .))))
+   #   datatable(df, escape = FALSE, selection = 'none', options = list(dom = 't', paging = FALSE, ordering = FALSE))
+   # })
+  #})
   
   #------------------------------------------------------------------------------
   scatterTitle <- reactive({
@@ -174,15 +175,21 @@ shinyServer(function(input, output, session) {
   ## visualize data
   output$plot1 <- renderPlot({
     df_scatter <- scatterData()###############
-    df_scatter$year <- as.numeric(as.character(df_scatter$year))###############
-    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
+    if (nrow(df_scatter) == 0){
+      ggplot() +
+        annotate("text", x = 10, y = 10, size = 6, 
+                 label = "Keine Titel zur Ansicht ausgewählt.") +
+        theme_void()
+    } else {
+      df_scatter$year <- as.numeric(as.character(df_scatter$year))###############
+      last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
       if (all(is.na(df$value))) {
         return(NA)
       } else {
         return(max(df$year, na.rm = TRUE))
       }
-    })
-    last_year <- max(last_years, na.rm = TRUE)###############
+      })
+      last_year <- max(last_years, na.rm = TRUE)###############
     
     ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
       # outlines the selected points with a specific colour (red)
@@ -205,13 +212,15 @@ shinyServer(function(input, output, session) {
             legend.position = "none",
             plot.caption = element_text(family = "Roboto",color = "gray12", size = 14))+
       scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+    }
   })
   
     
   ## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
-    hover <- input$plot_hover
+    hover <- input$plot_hover 
+    if (nrow(scatterData()) == 0) return(NULL)
     point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
     
@@ -238,7 +247,6 @@ shinyServer(function(input, output, session) {
                       "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y - 150, "px;")
     }
     
-    
     # actual tooltip created as wellPanel
     wellPanel(
       style = style,
@@ -249,14 +257,16 @@ shinyServer(function(input, output, session) {
   })
   
   # initialize an empty tibble with column names used in table
-  df_new <- tibble(Titel = character(), Jahr = character(), Wert = numeric(), Kommentar = character())
+  df_new <- tibble(Ursprung = character(), Titel = character(), Jahr = character(), Wert = numeric(), Kommentar = character())
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
-
+  
   ## render table
   output$mydata <- renderDT({
     data = isolate(rv$x) # isolate inhibits dependency between data and render-function, datatable is only updated, not rendered, when data changes
-    datatable(data, extensions = "Buttons", 
+    datatable(data,
+              escape = FALSE,
+              extensions = "Buttons", 
               editable = list(target = "cell", disable = list(columns = c(0, 1, 2))),
               class = 'compact stripe', 
         caption = "Hier erscheinen Ihre ausgewählten Datenpunke, gern können Sie diese kommentieren.",
@@ -308,7 +318,13 @@ shinyServer(function(input, output, session) {
     pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
     if (nrow(pointsnear) > 0) {
       pointsnear$year <- as.character(pointsnear$year)
-      rv$x <- rv$x %>% bind_rows(tibble(Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Kommentar = ""))
+      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Kommentar = ""))
+      rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                                 paste(fa("user"), Ursprung),
+                                                 if_else(startsWith(Ursprung, "AI"),
+                                                 paste(fa("microchip", Ursprung)),
+                                                 paste(Ursprung))
+                              ))
     }
   })
   

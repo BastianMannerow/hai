@@ -74,7 +74,7 @@ ui <- fluidPage(
         sliderTextInput(
           inputId = "pickWertebereich",
           label = "Wählen Sie den angezeigten Wertebereich.", 
-          choices = c(0,100,1000,10000,50000,100000),
+          choices = c(-10000,-1000,0,100,1000,10000,50000,100000),
           selected = c(0,100000)
         ),
         # UI Output for the warning message of out of range data points
