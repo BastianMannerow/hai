@@ -15,6 +15,12 @@ font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
+# load data 
+df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
+df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
+df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
+
+### ui
 ui <- fluidPage(
   includeCSS("www/style.css"),
   #navbarPage("Ausreißer App"),
