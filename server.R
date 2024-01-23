@@ -256,8 +256,14 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  # initialize an empty tibble with column names used in table
-  df_new <- tibble(Ursprung = character(), Titel = character(), Jahr = character(), Wert = numeric(), Kommentar = character())
+  # initialize a tibble with anomalies from AI output (artifical data, not real)
+  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
+  # add the icons
+  df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                               paste(fa("user"), "User"),
+                                               if_else(startsWith(Ursprung, "AI"),
+                                                       paste(fa("microchip"), "AI system"),
+                                                       Ursprung)))
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
   
@@ -318,12 +324,15 @@ shinyServer(function(input, output, session) {
     pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
     if (nrow(pointsnear) > 0) {
       pointsnear$year <- as.character(pointsnear$year)
-      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Kommentar = ""))
+      ### TODO ###
+      # Variable "Art" muss automatisch erkennen, welches dataframe (Ist, Soll oder Diff) gerade aktiv ist
+      # und entsprechend zugeordnet werden
+      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = "todo", Kommentar = ""))
       rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                                 paste(fa("user"), Ursprung),
+                                                 paste(fa("user"), "User"),
                                                  if_else(startsWith(Ursprung, "AI"),
-                                                 paste(fa("microchip", Ursprung)),
-                                                 paste(Ursprung))
+                                                 paste(fa("microchip"), "AI system"),
+                                                 Ursprung)
                               ))
     }
   })
