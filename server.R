@@ -91,51 +91,99 @@ shinyServer(function(input, output, session) {
   })
   
   #------------------------------------------------------------------------------
-  # Button implementation
-  selectedTitle <- reactiveVal()
-  observeEvent(input$print_title, {
-    # Setzen Sie selectedTitle basierend auf dem ausgewählten Titel
-    selectedTitle(input$print_title)
-    
-    # Rendering of detailed view
-    output$detailPlot <- renderPlot({
-      # Optional - check if title was selected
-      req(selectedTitle())
-      title <- selectedTitle()
-      
-      # Get corresponding data
-      ist_values <- df_ist %>%
-        filter(Gesamttitel == title) %>%
-        gather(key = "year", value = "value_ist", -Gesamttitel)
-      soll_values <- df_soll %>%
-        filter(Gesamttitel == title) %>%
-        gather(key = "year", value = "value_soll", -Gesamttitel)
-      
-      # combines the data to analyse its difference
-      combined_df <- left_join(ist_values, soll_values, by = "year") %>%
-        mutate(difference = value_ist - value_soll,
-               fill_color = ifelse(difference < 0, "red", "green"))
-      
-      # Generate graphic
-      ggplot(combined_df, aes(x = year, y = difference, fill = fill_color)) +
-        geom_bar(stat = "identity") + # Necessary for difference
-        geom_hline(yintercept = 0, linetype = "dashed") +
-        scale_fill_identity() +
-        labs(title = paste("Detailansicht für Titel:", title), y = "Differenzwert", x = "Jahr") +
-        theme_minimal()
-    })
+  # Count the amount of buttons, to scale the plot in ui.R
+  number_of_buttons <- reactive({
+    df_scatter <- scatterData() 
+    titelListe <- unique(df_scatter$Gesamttitel)
+    length(titelListe)
   })
   
-  # Refresh graphic
-  observeEvent(input$pickArt, {
-    output$mydata <- renderDT({
-      df <- scatterData() # Verwendung der scatterData Funktion
-      df$actions <- purrr::map_chr(df$Gesamttitel, ~ as.character(actionButton(inputId = paste0("btn_", .), label = "Print", onclick = sprintf('Shiny.setInputValue("print_title", "%s")', .))))
-      datatable(df, escape = FALSE, selection = 'none', options = list(dom = 't', paging = FALSE, ordering = FALSE))
+  
+  # Create buttons for each entry on y axis
+  output$dynamicButtons <- renderUI({
+    df_scatter <- scatterData()
+    titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
+    sortedTitelListe <- rev(levels(titelListe))
+    buttons <- lapply(sortedTitelListe, function(titel) {
+      btn_id <- paste0("button_", gsub(" ", "_", titel))
+      actionButton(inputId = btn_id, label = titel)
+    })
+    do.call(tagList, buttons)
+  })
+  
+  # Define reactiveVal for selected title
+  selectedTitle <- reactiveVal()
+  
+  # Generate the detailed view
+  observe({
+    df_scatter <- scatterData() 
+    titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
+    sortedTitelListe <- rev(levels(titelListe)) # Hier definieren
+    
+    lapply(sortedTitelListe, function(titel) {
+      btn_id <- paste0("button_", gsub(" ", "_", titel))
+      observeEvent(input[[btn_id]], {
+        selectedTitle(titel) # Update the reactive value
+        
+        # Rendering of time series plot
+        output$timeSeriesPlot <- renderPlot({
+          req(selectedTitle()) # Make sure a title is selected
+          title <- selectedTitle()
+          
+          # Get corresponding data for the time series plot
+          ist_values <- df_ist %>%
+            filter(Gesamttitel == title) %>%
+            gather(key = "year", value = "value_ist", -Gesamttitel)
+          
+          soll_values <- df_soll %>%
+            filter(Gesamttitel == title) %>%
+            gather(key = "year", value = "value_soll", -Gesamttitel)
+          
+          # Filter out rows with NA values
+          ist_values <- na.omit(ist_values)
+          soll_values <- na.omit(soll_values)
+          
+          # Generate time series plot
+          ggplot(soll_values, aes(x = year, y = value_soll)) +
+            geom_bar(stat = "identity", fill = "#d3d3d3", width = 0.7) +
+            geom_line(data = ist_values, aes(x = year, y = value_ist, group = Gesamttitel), color = "#8b0000", size = 2) +
+            labs(title = paste("Zeitverlauf für Titel:", title), y = "Absoluter Wert", x = "Jahr") +
+            theme_minimal()
+        })
+        
+        # Rendering of difference view
+        output$detailPlot <- renderPlot({
+          req(selectedTitle()) # Make sure a title is selected
+          title <- selectedTitle()
+          
+          # Get corresponding data
+          ist_values <- df_ist %>%
+            filter(Gesamttitel == title) %>%
+            gather(key = "year", value = "value_ist", -Gesamttitel)
+          soll_values <- df_soll %>%
+            filter(Gesamttitel == title) %>%
+            gather(key = "year", value = "value_soll", -Gesamttitel)
+          
+          # Combine the data to analyze its difference
+          combined_df <- left_join(ist_values, soll_values, by = "year") %>%
+            mutate(difference = value_soll - value_ist,
+                   fill_color = ifelse(difference < 0, "#841919", "#288419"))
+          
+          # Generate graphic
+          ggplot(combined_df, aes(x = year, y = difference, fill = fill_color)) +
+            geom_bar(stat = "identity") + # Necessary for difference
+            geom_hline(yintercept = 0, linetype = "dashed") +
+            scale_fill_identity() +
+            labs(title = paste("Detailansicht für Titel:", title), y = "Differenzwert", x = "Jahr") +
+            theme_minimal()
+        })
+      })
     })
   })
+          
   
   #------------------------------------------------------------------------------
+  
   scatterTitle <- reactive({
     if (input$pickArt == "Ist-Werte"){
       titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
@@ -181,6 +229,8 @@ shinyServer(function(input, output, session) {
             legend.position = "none",
             plot.caption = element_text(family = "Roboto",color = "gray12", size = 14))+
       scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+  }, height = function() {
+    40 * number_of_buttons() # Help to scale the plot according to the buttons
   })
   
     

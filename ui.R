@@ -78,32 +78,69 @@ ui <- fluidPage(
         # UI Output for the warning message of out of range data points
         uiOutput("outOfRangeMessage"),
       ),
-      column(9,
-        wellPanel(
-        div(
-          style = "position:relative",
-          # set height of plot to 400px, otherwise problems with hover function as sometimes the hover$coords_css info was
-          # not the same as the image size created by plotOutput
-          plotOutput("plot1", height = "400px", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
-          uiOutput("hover_info", style = "pointer-events: none")
-        )
-      ))
+      #--------------------------------------------
+      # Adjusts the plot with the corresponding buttons
+      tags$head(
+        tags$style(HTML("
+          .shiny-fluid-row {
+              display: flex;
+              flex-wrap: nowrap;
+              align-items: stretch;
+            }
+          .shiny-column {
+            min-width: 150px;
+            margin-right: 0px;
+          }
+          .buttons-column {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-right: 0px;
+          }
+          .buttons-panel {
+            padding-top: 90px;
+            display: block;
+            width: 100%;
+            margin-right: 0px;
+            margin-bottom: 50px;
+          }
+          .plot-container {
+              flex: 1;
+              display: flex;
+              flex-direction: column; 
+          }
+          "))
+      ),
+      fluidRow(class = "shiny-fluid-row",
+               column(class = "shiny-column buttons-column", width = 2,
+                      wellPanel(class = "buttons-panel",
+                                uiOutput("dynamicButtons")
+                      )
+               ),
+               column(class = "shiny-column", width = 10,
+                      wellPanel(class = "plot-container",
+                        plotOutput("plot1", width = "100%"), click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+                        uiOutput("hover_info", style = "pointer-events: none")
+                      )
+               )
+      ),
+      #-----------------------------------------
     ),
   fluidRow(
     column(6,
       wellPanel(
-      dataTableOutput('mydata'),
-      actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
-      actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
+        dataTableOutput('mydata'),
+        actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
+        actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
       )
     ),
     # the detailed view of a title
     column(6,
        wellPanel(
+         plotOutput("timeSeriesPlot"),
          plotOutput("detailPlot")
        )
     )
-  )
   )
 )
 
