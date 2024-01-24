@@ -94,6 +94,8 @@ ui <- fluidPage(
               display: flex;
               flex-wrap: nowrap;
               align-items: stretch;
+              border: 1px solid #D3D3D3;
+              padding-bottom: 34px;
             }
           .shiny-column {
             min-width: 150px;
@@ -103,32 +105,36 @@ ui <- fluidPage(
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            margin-right: 0px;
+            justify-content: flex-start;
+            margin-right: -60px;
+            position: relative;
+            z-index: 9999;
           }
           .buttons-panel {
             padding-top: 90px;
+            margin-right: 0px;
             display: block;
             width: 100%;
-            margin-right: 0px;
-            margin-bottom: 50px;
+            border: none;
+            box-shadow: none;
           }
           .plot-container {
               flex: 1;
               display: flex;
-              flex-direction: column; 
+              flex-direction: column;
           }
           "))
       ),
       fluidRow(class = "shiny-fluid-row",
-               column(class = "shiny-column buttons-column", width = 2,
-                      wellPanel(class = "buttons-panel",
+               column(class = "shiny-column buttons-column", width = 1,
+                      wellPanel(class = "buttons-panel", style = "background-color: transparent;",
                                 uiOutput("dynamicButtons")
                       )
                ),
                column(class = "shiny-column", width = 10,
-                      wellPanel(class = "plot-container",
-                        plotOutput("plot1", width = "100%"), click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
-                        uiOutput("hover_info", style = "pointer-events: none")
+                      wellPanel(class = "plot-container", style = "border: 0px solid #D3D3D3;",
+                                plotOutput("plot1", width = "100%"), click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+                        uiOutput("hover_info")
                       )
                )
       ),

@@ -132,7 +132,17 @@ shinyServer(function(input, output, session) {
     sortedTitelListe <- rev(levels(titelListe))
     buttons <- lapply(sortedTitelListe, function(titel) {
       btn_id <- paste0("button_", gsub(" ", "_", titel))
-      actionButton(inputId = btn_id, label = titel)
+      actionButton(inputId = btn_id, label = paste("Details für:", titel))
+      #actionButton(inputId = btn_id, label = "1234567811111111111111111111")
+      
+      # dynamic css
+      actionButton(
+        inputId = btn_id,
+        label = titel,
+        class = "custom-button",
+        style = "background-color: #197084; color: white;"
+      )
+      
     })
     do.call(tagList, buttons)
   })
@@ -242,7 +252,8 @@ shinyServer(function(input, output, session) {
               plot.subtitle = element_text(family = "Roboto", size = 18),
               panel.background = element_rect(fill = "grey98"),
               axis.text.x = element_text(size = 16),
-              axis.text.y = element_text(size = 16),
+              #axis.text.y = element_text(size = 16),
+              axis.text.y = element_blank(), # Hide the actual y axis
               axis.title.x = element_blank(),
               axis.ticks.x = element_line(color = "grey40"),
               axis.ticks.y = element_line(color = "grey40"),
@@ -252,7 +263,7 @@ shinyServer(function(input, output, session) {
         scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
     } # End of else block
   }, height = function() {
-    110 + 35 * number_of_buttons() # Help to scale the plot according to the buttons
+    110 + 34.7 * number_of_buttons() # Help to scale the plot according to the buttons
   })
   
     
