@@ -15,6 +15,12 @@ font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
+# load data 
+df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
+df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
+df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
+
+### ui
 ui <- fluidPage(
   includeCSS("www/style.css"),
   #navbarPage("Ausreißer App"),
@@ -47,16 +53,18 @@ ui <- fluidPage(
           justified = TRUE
         ),
         pickerInput(
-          inputId = "pickProdukt",
-          label = "Wählen Sie ein Produkt.",
-          choices = c("A", "B", "C"),
+          inputId = "pickKapitel",
+          label = "Wählen Sie die Kapitel. ",
+          choices = df_kapitel$Kapitel[1:3],
+          multiple = TRUE,
+          selected = df_kapitel$Kapitel[1:3]
         ),
         pickerInput(
           inputId = "pickTitel",
           label = "Wählen Sie die Titel. ",
-          choices = c("a","b","c"),
+          choices = df_zweck$Gesamttitel,
+          selected = df_zweck$Gesamttitel,
           multiple = TRUE,
-          selected = c("a","b","c"),
           options = list(
             'actions-box' = TRUE,
             'deselect-all-text' = "Alle abwählen",
@@ -72,7 +80,7 @@ ui <- fluidPage(
         sliderTextInput(
           inputId = "pickWertebereich",
           label = "Wählen Sie den angezeigten Wertebereich.", 
-          choices = c(0,100,1000,10000,50000,100000),
+          choices = c(-10000,-1000,0,100,1000,10000,50000,100000),
           selected = c(0,100000)
         ),
         # UI Output for the warning message of out of range data points

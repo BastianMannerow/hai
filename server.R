@@ -12,6 +12,7 @@ library(readxl)
 library(DT)
 library(scales)
 library(grid)
+library(fontawesome)
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -20,14 +21,34 @@ options(scipen = 999)
 
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
-df_ist <- slice(df_ist, 1:20) # subset (first 20 rows), can be uncommented later
+df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
 df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
-df_soll <- slice(df_soll, 1:20) # subset (first 20 rows), can be uncommented later
+df_soll <- slice(df_soll, 21:40) # subset (20 rows), can be uncommented later
 df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
-df_diff <- slice(df_diff, 1:20) # subset (first 20 rows), can be uncommented later
+df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
+df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
+df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
+df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### set up server
 shinyServer(function(input, output, session) {
+  
+  ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
+  
+  # save current choices from pickTitel in a reactive value, to save them as selected 
+  # when pickKapitel is changed, further reading: https://stackoverflow.com/questions/60122122/shiny-observeevent-updateselectinput-inputs-resetting
+  current_titel <- reactiveVal()
+  observe({
+    current_titel(input$pickTitel)
+  })
+  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
+  observeEvent(input$pickKapitel, {
+    updatePickerInput(
+      session = session,
+      inputId = "pickTitel",
+      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
+      selected = current_titel())
+  }, ignoreInit = TRUE)
   
   ## filter data
   scatterData <- reactive({
@@ -35,6 +56,8 @@ shinyServer(function(input, output, session) {
     selected_years <- as.numeric(input$pickZeitraum)
     # extract the range
     selected_values <- input$pickWertebereich
+    # extract selected Gesamttitel
+    selected_title <- input$pickTitel
     
     # differentiate between the sets of data
     df_scatter <- if (input$pickArt == "Ist-Werte"){
@@ -43,6 +66,7 @@ shinyServer(function(input, output, session) {
       melt(df_soll, id.vars = "Gesamttitel")
     } else if (input$pickArt == "Differenz"){
       melt(df_diff, id.vars = "Gesamttitel")
+      #df_scatter <- mutate(df_scatter, Kapitel = substr(df_scatter$Gesamttitel, start = 1, stop = 4),.before=1)
     }
     
     # Rename 'variable' column to 'year'
@@ -54,12 +78,13 @@ shinyServer(function(input, output, session) {
     # execute the filtering
     df_scatter <- df_scatter %>%
       filter(year >= selected_years[1] & year <= selected_years[2],
-             value >= selected_values[1] & value <= selected_values[2])
+             value >= selected_values[1] & value <= selected_values[2],
+             Gesamttitel %in% selected_title)
     
     return(df_scatter)
   })
   
-  # Help function to analise the unfiltered data
+  # Help function to analyse the unfiltered data
   originalData <- reactive({
     df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
     df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
@@ -97,7 +122,6 @@ shinyServer(function(input, output, session) {
     titelListe <- unique(df_scatter$Gesamttitel)
     length(titelListe)
   })
-  
   
   # Create buttons for each entry on y axis
   output$dynamicButtons <- renderUI({
@@ -180,8 +204,6 @@ shinyServer(function(input, output, session) {
       })
     })
   })
-          
-  
   #------------------------------------------------------------------------------
   
   scatterTitle <- reactive({
@@ -197,47 +219,52 @@ shinyServer(function(input, output, session) {
   
   ## visualize data
   output$plot1 <- renderPlot({
-    df_scatter <- scatterData()###############
-    df_scatter$year <- as.numeric(as.character(df_scatter$year))###############
-    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
-      if (all(is.na(df$value))) {
-        return(NA)
-      } else {
-        return(max(df$year, na.rm = TRUE))
-      }
-    })
-    last_year <- max(last_years, na.rm = TRUE)###############
-    
-    ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
-      # outlines the selected points with a specific colour (red)
-      geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      geom_point(aes(colour = factor(year)), size = 4) + #################
-      # to color the selected points red
-      # geom_point(data=selected(), colour= "red", size = 4)+
-      labs(title = scatterTitle(),
-           subtitle = "Einzelplan 14",
-           caption = "Daten des Landes Schleswig-Holstein") +
-      theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
-            plot.subtitle = element_text(family = "Roboto", size = 18),
-            panel.background = element_rect(fill = "grey98"),
-            axis.text.x = element_text(size = 16),
-            axis.text.y = element_text(size = 16),
-            axis.title.x = element_blank(),
-            axis.ticks.x = element_line(color = "grey40",),
-            axis.ticks.y = element_line(color = "grey40"),
-            axis.title.y = element_blank(),
-            legend.position = "none",
-            plot.caption = element_text(family = "Roboto",color = "gray12", size = 14))+
-      scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+    df_scatter <- scatterData()
+    if (nrow(df_scatter) == 0) {
+      ggplot() +
+        annotate("text", x = 10, y = 10, size = 6, 
+                 label = "Keine Titel zur Ansicht ausgewählt.") +
+        theme_void()
+    } else {
+      df_scatter$year <- as.numeric(as.character(df_scatter$year))
+      last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
+        if (all(is.na(df$value))) {
+          return(NA)
+        } else {
+          return(max(df$year, na.rm = TRUE))
+        }
+      })
+      last_year <- max(last_years, na.rm = TRUE)
+      
+      ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
+        geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
+        geom_point(aes(colour = factor(year)), size = 4) +
+        labs(title = scatterTitle(),
+             subtitle = "Einzelplan 14",
+             caption = "Daten des Landes Schleswig-Holstein") +
+        theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
+              plot.subtitle = element_text(family = "Roboto", size = 18),
+              panel.background = element_rect(fill = "grey98"),
+              axis.text.x = element_text(size = 16),
+              axis.text.y = element_text(size = 16),
+              axis.title.x = element_blank(),
+              axis.ticks.x = element_line(color = "grey40"),
+              axis.ticks.y = element_line(color = "grey40"),
+              axis.title.y = element_blank(),
+              legend.position = "none",
+              plot.caption = element_text(family = "Roboto",color = "gray12", size = 14)) +
+        scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+    } # End of else block
   }, height = function() {
-    40 * number_of_buttons() # Help to scale the plot according to the buttons
+    100 + 40 * number_of_buttons() # Help to scale the plot according to the buttons
   })
   
     
   ## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
-    hover <- input$plot_hover
+    hover <- input$plot_hover 
+    if (nrow(scatterData()) == 0) return(NULL)
     point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
     
@@ -264,7 +291,6 @@ shinyServer(function(input, output, session) {
                       "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y - 150, "px;")
     }
     
-    
     # actual tooltip created as wellPanel
     wellPanel(
       style = style,
@@ -274,15 +300,23 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  # initialize an empty tibble with column names used in table
-  df_new <- tibble(Titel = character(), Jahr = character(), Wert = numeric(), Kommentar = character())
+  # initialize a tibble with anomalies from AI output (artifical data, not real)
+  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
+  # add the icons
+  df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                               paste(fa("user"), "User"),
+                                               if_else(startsWith(Ursprung, "AI"),
+                                                       paste(fa("microchip"), "AI system"),
+                                                       Ursprung)))
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
-
+  
   ## render table
   output$mydata <- renderDT({
     data = isolate(rv$x) # isolate inhibits dependency between data and render-function, datatable is only updated, not rendered, when data changes
-    datatable(data, extensions = "Buttons", 
+    datatable(data,
+              escape = FALSE,
+              extensions = "Buttons", 
               editable = list(target = "cell", disable = list(columns = c(0, 1, 2))),
               class = 'compact stripe', 
         caption = "Hier erscheinen Ihre ausgewählten Datenpunke, gern können Sie diese kommentieren.",
@@ -334,7 +368,16 @@ shinyServer(function(input, output, session) {
     pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
     if (nrow(pointsnear) > 0) {
       pointsnear$year <- as.character(pointsnear$year)
-      rv$x <- rv$x %>% bind_rows(tibble(Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Kommentar = ""))
+      ### TODO ###
+      # Variable "Art" muss automatisch erkennen, welches dataframe (Ist, Soll oder Diff) gerade aktiv ist
+      # und entsprechend zugeordnet werden
+      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = "todo", Kommentar = ""))
+      rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                                 paste(fa("user"), "User"),
+                                                 if_else(startsWith(Ursprung, "AI"),
+                                                 paste(fa("microchip"), "AI system"),
+                                                 Ursprung)
+                              ))
     }
   })
   
