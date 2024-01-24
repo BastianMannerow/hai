@@ -13,6 +13,7 @@ library(DT)
 library(scales)
 library(grid)
 library(fontawesome)
+library(patchwork)
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -143,64 +144,58 @@ shinyServer(function(input, output, session) {
   observe({
     df_scatter <- scatterData() 
     titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
-    sortedTitelListe <- rev(levels(titelListe)) # Hier definieren
+    sortedTitelListe <- rev(levels(titelListe))
     
     lapply(sortedTitelListe, function(titel) {
       btn_id <- paste0("button_", gsub(" ", "_", titel))
       observeEvent(input[[btn_id]], {
         selectedTitle(titel) # Update the reactive value
         
-        # Rendering of time series plot
-        output$timeSeriesPlot <- renderPlot({
-          req(selectedTitle()) # Make sure a title is selected
+        # Rendering of combined plot
+        output$combinedPlot <- renderPlot({
+          req(selectedTitle())
           title <- selectedTitle()
           
-          # Get corresponding data for the time series plot
+          # Get Data
           ist_values <- df_ist %>%
             filter(Gesamttitel == title) %>%
             gather(key = "year", value = "value_ist", -Gesamttitel)
-          
           soll_values <- df_soll %>%
             filter(Gesamttitel == title) %>%
             gather(key = "year", value = "value_soll", -Gesamttitel)
+          combined_df <- left_join(ist_values, soll_values, by = "year") %>%
+            mutate(difference = value_soll - value_ist,
+                   fill_color = ifelse(difference < 0, "Negative Differenz", "Positive Differenz"))
           
-          # Filter out rows with NA values
+          # Handle NA
           ist_values <- na.omit(ist_values)
           soll_values <- na.omit(soll_values)
           
-          # Generate time series plot
-          ggplot(soll_values, aes(x = year, y = value_soll)) +
-            geom_bar(stat = "identity", fill = "#d3d3d3", width = 0.7) +
-            geom_line(data = ist_values, aes(x = year, y = value_ist, group = Gesamttitel), color = "#8b0000", size = 2) +
-            labs(title = paste("Zeitverlauf für Titel:", title), y = "Absoluter Wert", x = "Jahr") +
-            theme_minimal()
-        })
-        
-        # Rendering of difference view
-        output$detailPlot <- renderPlot({
-          req(selectedTitle()) # Make sure a title is selected
-          title <- selectedTitle()
+          # Time Series
+          timeSeriesPlot <- ggplot(soll_values, aes(x = year, y = value_soll, fill = "Soll-Werte")) +
+            geom_bar(stat = "identity", width = 0.7) +
+            geom_line(data = ist_values, aes(x = year, y = value_ist, color = "Ist-Werte", group = 1), size = 2) +
+            scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3"), name = "Zeitverlauf") +
+            scale_color_manual(values = c("Ist-Werte" = "#197084"), name = "Zeitverlauf") +
+            labs(y = "Absolutwerte") +
+            theme_minimal() +
+            theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
           
-          # Get corresponding data
-          ist_values <- df_ist %>%
-            filter(Gesamttitel == title) %>%
-            gather(key = "year", value = "value_ist", -Gesamttitel)
-          soll_values <- df_soll %>%
-            filter(Gesamttitel == title) %>%
-            gather(key = "year", value = "value_soll", -Gesamttitel)
-          
-          # Combine the data to analyze its difference
-          combined_df <- left_join(ist_values, soll_values, by = "year") %>%
-            mutate(difference = value_soll - value_ist,
-                   fill_color = ifelse(difference < 0, "#841919", "#288419"))
-          
-          # Generate graphic
-          ggplot(combined_df, aes(x = year, y = difference, fill = fill_color)) +
-            geom_bar(stat = "identity") + # Necessary for difference
+          # Difference Plot
+          detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = fill_color)) +
+            geom_bar(stat = "identity") +
             geom_hline(yintercept = 0, linetype = "dashed") +
-            scale_fill_identity() +
-            labs(title = paste("Detailansicht für Titel:", title), y = "Differenzwert", x = "Jahr") +
+            scale_fill_manual(values = c("Negative Differenz" = "#841919", "Positive Differenz" = "#288419"), name = "Differenztyp") +
+            labs(y = "Zieldifferenz") +
             theme_minimal()
+          
+          # Combination
+          combinedPlot <- timeSeriesPlot / detailPlot +
+            plot_layout(guides = "collect") +
+            plot_annotation(title = paste("Soll-Ist-Vergleich:", title)) +
+            theme(plot.margin = margin(1, 1, 1, 1))
+          
+          return(combinedPlot)
         })
       })
     })

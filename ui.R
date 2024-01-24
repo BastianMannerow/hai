@@ -145,8 +145,7 @@ ui <- fluidPage(
     # the detailed view of a title
     column(6,
        wellPanel(
-         plotOutput("timeSeriesPlot"),
-         plotOutput("detailPlot")
+         plotOutput("combinedPlot")
        )
     )
   )
