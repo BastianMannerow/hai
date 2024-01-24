@@ -126,7 +126,8 @@ shinyServer(function(input, output, session) {
   # Create buttons for each entry on y axis
   output$dynamicButtons <- renderUI({
     df_scatter <- scatterData()
-    titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
+    titelListe <- factor(df_scatter$Gesamttitel)
+    
     sortedTitelListe <- rev(levels(titelListe))
     buttons <- lapply(sortedTitelListe, function(titel) {
       btn_id <- paste0("button_", gsub(" ", "_", titel))
@@ -256,7 +257,7 @@ shinyServer(function(input, output, session) {
         scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
     } # End of else block
   }, height = function() {
-    100 + 40 * number_of_buttons() # Help to scale the plot according to the buttons
+    110 + 35 * number_of_buttons() # Help to scale the plot according to the buttons
   })
   
     
