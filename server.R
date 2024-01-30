@@ -35,7 +35,14 @@ df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 shinyServer(function(input, output, session) {
   
   ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
-  
+  # reaktiver Platzhalter für aktuelles df
+  reac_data <- reactive({
+    get(input$pickArt)
+  })
+  curr_art <- reactiveVal()
+  observe({
+    curr_art(input$pickArt)
+  })
   # save current choices from pickTitel in a reactive value, to save them as selected 
   # when pickKapitel is changed, further reading: https://stackoverflow.com/questions/60122122/shiny-observeevent-updateselectinput-inputs-resetting
   current_titel <- reactiveVal()
@@ -51,7 +58,7 @@ shinyServer(function(input, output, session) {
       selected = current_titel())
   }, ignoreInit = TRUE)
   
-  ## filter data
+  ## filter data for scatter plot
   scatterData <- reactive({
     # extract the time period
     selected_years <- as.numeric(input$pickZeitraum)
@@ -59,17 +66,8 @@ shinyServer(function(input, output, session) {
     selected_values <- input$pickWertebereich
     # extract selected Gesamttitel
     selected_title <- input$pickTitel
-    
-    # differentiate between the sets of data
-    df_scatter <- if (input$pickArt == "Ist-Werte"){
-      melt(df_ist, id.vars = "Gesamttitel")
-    } else if (input$pickArt == "Soll-Werte"){
-      melt(df_soll, id.vars = "Gesamttitel")
-    } else if (input$pickArt == "Differenz"){
-      melt(df_diff, id.vars = "Gesamttitel")
-      #df_scatter <- mutate(df_scatter, Kapitel = substr(df_scatter$Gesamttitel, start = 1, stop = 4),.before=1)
-    }
-    
+    # melt data for scatter plot
+    df_scatter <- melt(reac_data(), id.vars = "Gesamttitel")
     # Rename 'variable' column to 'year'
     colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
     
@@ -85,26 +83,11 @@ shinyServer(function(input, output, session) {
     return(df_scatter)
   })
   
-  # Help function to analyse the unfiltered data
-  originalData <- reactive({
-    df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
-    df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
-    df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
-    
-    if (input$pickArt == "Ist-Werte") {
-      melt(df_ist, id.vars = "Gesamttitel")
-    } else if (input$pickArt == "Soll-Werte") {
-      melt(df_soll, id.vars = "Gesamttitel")
-    } else {
-      melt(df_diff, id.vars = "Gesamttitel")
-    }
-  })
-  
   # Counts data points, which are not visible
   pointsOutsideRange <- reactive({
     selected_values <- input$pickWertebereich
     df_scatter <- scatterData()
-    df_original <- originalData()
+    df_original <- melt(reac_data(), id.vars = "Gesamttitel")
     full_range_count <- sum(df_original$value >= 0 & df_original$value <= 100000, na.rm = TRUE)
     selected_range_count <- sum(df_scatter$value >= selected_values[1] & df_scatter$value <= selected_values[2], na.rm = TRUE)
     filtered_out_count <- full_range_count - selected_range_count
@@ -213,11 +196,11 @@ shinyServer(function(input, output, session) {
   #------------------------------------------------------------------------------
   
   scatterTitle <- reactive({
-    if (input$pickArt == "Ist-Werte"){
+    if (input$pickArt == "df_ist"){
       titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "Soll-Werte"){
+    } else if (input$pickArt == "df_soll"){
       titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "Differenz"){
+    } else if (input$pickArt == "df_diff"){
       titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
     }
     return(titel)
@@ -363,22 +346,36 @@ shinyServer(function(input, output, session) {
     # otherwise no matching table found
   })
   
-  ## color the data from the table
+  ## df to save anomaly points (from the table) for coloring in the plot
   selected <- reactive({
-    ## get data from rv$x to the same structure like in df_ist_ausz
-    selected_points <- rv$x %>% select(Gesamttitel=Titel, year=Jahr, value=Wert)
+    ## get data from rv$x to the same structure like in df and 
+    # filter curr_art (Betragsart) and input$pickTitel
+    if (curr_art() == "df_ist"){
+      selected_points <- rv$x %>% filter(Art == "Ist") %>% select(Gesamttitel=Titel, year=Jahr, value=Wert)
+    } else if (curr_art() == "df_soll"){
+      selected_points <- rv$x %>% filter(Art == "Soll") %>% select(Gesamttitel=Titel, year=Jahr, value=Wert)
+    } else{
+      selected_points <- rv$x %>% filter(Art == "Diff") %>% select(Gesamttitel=Titel, year=Jahr, value=Wert)
+    }
+    if (!is.null(input$pickTitel)){
+      selected_points <- filter(selected_points, Gesamttitel %in% input$pickTitel)
+    }
     return(selected_points)
   })
   
   ## add data to table from clicked points in plot
   observeEvent(input$clicked, {
+    if (curr_art() == "df_ist"){
+      art <- "Ist"
+    } else if (curr_art() == "df_soll"){
+      art <- "Soll"
+    } else {
+      art <- "Diff"
+    }
     pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
     if (nrow(pointsnear) > 0) {
       pointsnear$year <- as.character(pointsnear$year)
-      ### TODO ###
-      # Variable "Art" muss automatisch erkennen, welches dataframe (Ist, Soll oder Diff) gerade aktiv ist
-      # und entsprechend zugeordnet werden
-      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = "todo", Kommentar = ""))
+      rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
       rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
                                                  paste(fa("user"), "User"),
                                                  if_else(startsWith(Ursprung, "AI"),

@@ -48,8 +48,8 @@ ui <- fluidPage(
         radioGroupButtons(
           inputId = "pickArt",
           label = "Wählen Sie die Art der Beträge.",
-          choices = c("Soll-Werte", "Ist-Werte", "Differenz"),
-          #choices = c("Soll-Werte", "Ist-Werte"),
+          choiceNames = c("Soll-Werte", "Ist-Werte", "Differenz"),
+          choiceValues = c("df_soll", "df_ist", "df_diff"),
           justified = TRUE
         ),
         pickerInput(
@@ -133,8 +133,8 @@ ui <- fluidPage(
                ),
                column(class = "shiny-column", width = 10,
                       wellPanel(class = "plot-container", style = "border: 0px solid #D3D3D3;",
-                                plotOutput("plot1", width = "100%"), click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
-                        uiOutput("hover_info")
+                                plotOutput("plot1", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+                        uiOutput("hover_info", style = "pointer-events: none"))
                       )
                )
       ),
