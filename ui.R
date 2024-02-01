@@ -96,7 +96,7 @@ ui <- fluidPage(
               align-items: stretch;
               border: 1px solid #D3D3D3;
               padding-bottom: 34px;
-            }
+          }
           .shiny-column {
             min-width: 150px;
             margin-right: 0px;
@@ -111,7 +111,6 @@ ui <- fluidPage(
             z-index: 9999;
           }
           .buttons-panel {
-            padding-top: 90px;
             margin-right: 0px;
             display: block;
             width: 100%;
@@ -123,11 +122,23 @@ ui <- fluidPage(
               display: flex;
               flex-direction: column;
           }
-          "))
-      ),
+          @media screen and (min-aspect-ratio: 16/9) {
+            .buttons-panel {
+              padding-top: 50px;
+            }
+          }
+          @media screen and (max-aspect-ratio: 16/9) {
+            .buttons-panel {
+              padding-top: 58px;
+            }
+          }
+        "))
+      )
+      ,
       fluidRow(class = "shiny-fluid-row",
                column(class = "shiny-column buttons-column", width = 1,
                       wellPanel(class = "buttons-panel", style = "background-color: transparent;",
+                                tags$div(style = "background-color: #197084; color: white; padding: 5px; display: inline-block;", "Details:"),
                                 uiOutput("dynamicButtons")
                       )
                ),
