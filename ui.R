@@ -96,7 +96,7 @@ ui <- fluidPage(
               align-items: stretch;
               border: 1px solid #D3D3D3;
               padding-bottom: 34px;
-          }
+            }
           .shiny-column {
             min-width: 150px;
             margin-right: 0px;
@@ -122,7 +122,7 @@ ui <- fluidPage(
               display: flex;
               flex-direction: column;
           }
-          @media screen and (min-aspect-ratio: 16/9) {
+          	          @media screen and (min-aspect-ratio: 16/9) {
             .buttons-panel {
               padding-top: 50px;
             }
@@ -145,25 +145,25 @@ ui <- fluidPage(
                column(class = "shiny-column", width = 10,
                       wellPanel(class = "plot-container", style = "border: 0px solid #D3D3D3;",
                                 plotOutput("plot1", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
-                        uiOutput("hover_info", style = "pointer-events: none"))
-                      )
+                                uiOutput("hover_info", style = "pointer-events: none"))
                )
-      ),
-      #-----------------------------------------
+      )
     ),
+    #-----------------------------------------
+  ),
   fluidRow(
     column(6,
-      wellPanel(
-        dataTableOutput('mydata'),
-        actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
-        actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
-      )
+           wellPanel(
+             dataTableOutput('mydata'),
+             actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
+             actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
+           )
     ),
     # the detailed view of a title
     column(6,
-       wellPanel(
-         plotOutput("combinedPlot")
-       )
+           wellPanel(
+             plotOutput("combinedPlot")
+           )
     )
   )
 )

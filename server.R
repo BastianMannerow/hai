@@ -79,18 +79,31 @@ shinyServer(function(input, output, session) {
       filter(year >= selected_years[1] & year <= selected_years[2],
              value >= selected_values[1] & value <= selected_values[2],
              Gesamttitel %in% selected_title)
-    
     return(df_scatter)
   })
   
+  ## filter data for scatter plot
+  alternative_scatterData <- reactive({
+    # extract selected Gesamttitel
+    selected_title <- input$pickTitel
+    # melt data for scatter plot
+    df_scatter <- melt(reac_data(), id.vars = "Gesamttitel")
+    # Rename 'variable' column to 'year'
+    colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
+    
+    # convert year column into numeric values
+    df_scatter$year <- as.numeric(as.character(df_scatter$year))
+    
+    # execute the filtering
+    df_scatter <- df_scatter %>%
+      filter(Gesamttitel %in% selected_title)
+    return(df_scatter)
+  })
+  
+  
   # Counts data points, which are not visible
   pointsOutsideRange <- reactive({
-    selected_values <- input$pickWertebereich
-    df_scatter <- scatterData()
-    df_original <- melt(reac_data(), id.vars = "Gesamttitel")
-    full_range_count <- sum(df_original$value >= 0 & df_original$value <= 100000, na.rm = TRUE)
-    selected_range_count <- sum(df_scatter$value >= selected_values[1] & df_scatter$value <= selected_values[2], na.rm = TRUE)
-    filtered_out_count <- full_range_count - selected_range_count
+    filtered_out_count <- nrow(alternative_scatterData()) - nrow(scatterData())
     filtered_out_count
   })
   
