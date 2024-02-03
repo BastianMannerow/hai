@@ -23,14 +23,14 @@ options(scipen = 999)
 
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
-df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
+#df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
 df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
-df_soll <- slice(df_soll, 21:40) # subset (20 rows), can be uncommented later
+#df_soll <- slice(df_soll, 21:40) # subset (20 rows), can be uncommented later
 df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
-df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
+#df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
 df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
 df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
-df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
+#df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### set up server
 shinyServer(function(input, output, session) {
@@ -48,6 +48,7 @@ shinyServer(function(input, output, session) {
   current_titel <- reactiveVal()
   observe({
     current_titel(input$pickTitel)
+    session$clientData$output_plot1_width
   })
   # when pickKapitel is changed, the choices for pickTitel are changed accordingly
   observeEvent(input$pickKapitel, {
@@ -79,6 +80,7 @@ shinyServer(function(input, output, session) {
       filter(year >= selected_years[1] & year <= selected_years[2],
              value >= selected_values[1] & value <= selected_values[2],
              Gesamttitel %in% selected_title)
+    session$clientData$output_plot1_width
     return(df_scatter)
   })
   
@@ -96,7 +98,9 @@ shinyServer(function(input, output, session) {
     
     # execute the filtering
     df_scatter <- df_scatter %>%
-      filter(Gesamttitel %in% selected_title)
+      filter(Gesamttitel %in% selected_title) %>%
+      drop_na(value)  # Remove rows where the value is NA
+    
     return(df_scatter)
   })
   
@@ -134,7 +138,7 @@ shinyServer(function(input, output, session) {
         inputId = btn_id,
         label = titel,
         class = "custom-button",
-        style = "background-color: #197084; color: white;"
+        style = paste0("font-size: 12px; background-color: #197084; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px;")
       )
       
     })
@@ -186,9 +190,6 @@ shinyServer(function(input, output, session) {
           diff_anomalies <- anomalies %>% 
             filter(Art == "Diff")
           
-          print(anomalies)
-          print(diff_anomalies)
-          
           # Time Series
           soll_values$Anomalie <- ifelse(soll_values$year %in% soll_anomalies$Jahr, "Soll-Anomalie", "Soll-Werte")
           timeSeriesPlot <- ggplot(soll_values, aes(x = year, y = value_soll)) +
@@ -229,6 +230,158 @@ shinyServer(function(input, output, session) {
       })
     })
   })
+  
+  # Receive relevant data
+  scatterDataframe <- reactive({
+    if (input$pickArt == "df_ist"){
+      dataframe <- df_ist
+    } else if (input$pickArt == "df_soll"){
+      dataframe <- df_soll
+    } else if (input$pickArt == "df_diff"){
+      dataframe <- df_diff
+    }
+    selected_title <- input$pickTitel
+    dataframe <- dataframe %>%
+      filter(Gesamttitel %in% selected_title)
+    
+    return(dataframe)
+  })
+  
+  
+  
+  # Overrides the slider for a dynamic effect
+  observe({
+    years <- names(scatterDataframe())[-1]  # Deletes Gesamttitel
+    years <- as.character(years)
+    
+    # 'selected' first and last year
+    updateSliderTextInput(session, "pickZeitraum",
+                          choices = years,
+                          selected = c(years[1], tail(years, 1)))
+    session$clientData$output_plot1_width
+  })
+  
+  
+  # Now the values
+  observe({
+    df <- scatterDataframe()
+    df <- df[,-1]
+    # Checks the interval of the whole dataframe
+    minWert <- min(df, na.rm = TRUE)
+    maxWert <- max(df, na.rm = TRUE)
+    
+    # smart logarithmic rounding, to have a reasonable interval between slider inputs
+    roundDownToNearest <- function(x) {
+      exp <- ifelse(x == 0, 0, floor(log10(abs(x))))
+      base <- 10^exp
+      if(x > 0) {
+        return(floor(x/base)*base)
+      } else {
+        return(-ceiling(abs(x)/base)*base)
+      }
+    }
+    
+    # Rounding up to an appropriate value
+    roundUpToNearest <- function(x) {
+      if(x == 0) return(0)
+      exp <- floor(log10(abs(x)))
+      base <- 10^exp
+      if(x > 0) {
+        upper <- ceiling(x/base)*base
+        # examines if a multiple value is closer than base
+        if (upper - x <= base / 2) {
+          return(upper)
+        } else {
+          # rounding based on difference (important for a reasonable x axis)
+          finerIncrement <- 10^(exp-1)
+          finerUpper <- ceiling(x/finerIncrement)*finerIncrement
+          if(finerUpper > x) {
+            return(finerUpper)
+          } else {
+            return(upper) # shouldn't be used, just in case for bug fixing
+          }
+        }
+      } else {
+        # negative case
+        lower <- -floor(abs(x)/base)*base
+        return(lower)
+      }
+    }
+    
+    minWertRounded <- roundDownToNearest(minWert)
+    maxWertRounded <- roundUpToNearest(maxWert)
+    
+    logMin <- log10(max(minWertRounded, 1))
+    logMax <- log10(maxWertRounded)
+    logRange <- seq(logMin, logMax, length.out = 10) # Number of slider choices
+    choices <- 10^logRange
+    choicesRounded <- unique(sapply(choices, roundUpToNearest))
+    
+    # final rounding to receive int from double
+    choicesRounded <- round(choicesRounded)
+    
+    if (choicesRounded[1] > minWert) {
+      choicesRounded[1] <- minWertRounded
+    }
+    if (choicesRounded[length(choicesRounded)] != maxWertRounded) {
+      choicesRounded[length(choicesRounded)] <- maxWertRounded
+    }
+    
+    values <- c(minWertRounded, maxWertRounded)
+    
+    updateSliderTextInput(session, "pickWertebereich",
+                          choices = choicesRounded,
+                          selected = values)
+    session$clientData$output_plot1_width
+  })
+  
+  # dynamic scaling for plot and button
+  getbutton_width <- reactive({
+    width <- session$clientData$output_buttonsPanel_width
+    #width <- 100
+    return(width)
+  })
+  
+  getbutton_height <- reactive({
+    height <- 40
+    return(height)
+  })
+  
+  getPlotHeight <- reactive({
+    if(input$screenSize$height == 1200) {
+      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
+    }
+    if(input$screenSize$height == 1080) {
+      #height <- getbutton_height() * (number_of_buttons() + 2) + 12
+      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
+    }
+    else{
+      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
+    }
+    return(height)
+  })
+  
+  getPlotWidth <- reactive({
+    #width <- 1200 * (1903/input$screenSize$width)
+    #print(input$windowSize$width)
+    width <- 1200 * (input$windowSize$width/1903)
+    #print(width)
+    #width <- 1200
+    return(width)
+  })
+  
+  observeEvent(input$screenSize, {
+    screen_width <- input$screenSize$width
+    screen_height <- input$screenSize$height
+    message(paste("Aktuelle Bildschirmauflösung: Breite =", screen_width, "Höhe =", screen_height))
+  })
+  
+  observe({
+    width <- input$windowSize$width
+    height <- input$windowSize$height
+    message(paste("Aktuelle Fenstergröße: Breite =", width, "Höhe =", height))
+  })
+  
   #------------------------------------------------------------------------------
   
   scatterTitle <- reactive({
@@ -246,44 +399,62 @@ shinyServer(function(input, output, session) {
   output$plot1 <- renderPlot({
     df_scatter <- scatterData()
     if (nrow(df_scatter) == 0) {
-      ggplot() +
-        annotate("text", x = 10, y = 10, size = 6, 
-                 label = "Keine Titel zur Ansicht ausgewählt.") +
-        theme_void()
-    } else {
-      df_scatter$year <- as.numeric(as.character(df_scatter$year))
-      last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
-        if (all(is.na(df$value))) {
-          return(NA)
-        } else {
-          return(max(df$year, na.rm = TRUE))
-        }
-      })
-      last_year <- max(last_years, na.rm = TRUE)
-      
-      ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
-        geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-        geom_point(aes(colour = factor(year)), size = 4) +
-        labs(title = scatterTitle(),
-             subtitle = "Einzelplan 14",
-             caption = "Daten des Landes Schleswig-Holstein") +
-        theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
-              plot.subtitle = element_text(family = "Roboto", size = 18),
-              panel.background = element_rect(fill = "grey98"),
-              axis.text.x = element_text(size = 16),
-              #axis.text.y = element_text(size = 16),
-              axis.text.y = element_blank(), # Hide the actual y axis
-              axis.title.x = element_blank(),
-              axis.ticks.x = element_line(color = "grey40"),
-              axis.ticks.y = element_line(color = "grey40"),
-              axis.title.y = element_blank(),
-              legend.position = "none",
-              plot.caption = element_text(family = "Roboto",color = "gray12", size = 14)) +
-        scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
-    } # End of else block
-  }, height = function() {
-    # print(input$window_height / 2 + 10 * number_of_buttons())
-    110 + 34.7 * number_of_buttons() # Help to scale the plot according to the buttons
+      return(ggplot() +
+               annotate("text", x = 10, y = 10, size = 6, 
+                        label = "Keine Titel zur Ansicht ausgewählt.") +
+               theme_void())
+    }
+    
+    df_scatter$year <- as.numeric(as.character(df_scatter$year))
+    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
+      if (all(is.na(df$value))) {
+        return(NA)
+      } else {
+        return(max(df$year, na.rm = TRUE))
+      }
+    })
+    last_year <- max(last_years, na.rm = TRUE)
+    
+    p <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
+      geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
+      geom_point(aes(colour = factor(year)), size = 4) +
+      labs(title = scatterTitle(),
+           subtitle = "Einzelplan 14",
+           caption = "Daten des Landes Schleswig-Holstein") +
+      theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
+            plot.subtitle = element_text(family = "Roboto", size = 18),
+            panel.background = element_rect(fill = "grey98"),
+            axis.text.x = element_text(size = 16),
+            axis.text.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.ticks.x = element_line(color = "grey40"),
+            axis.ticks.y = element_line(color = "grey40"),
+            axis.title.y = element_blank(),
+            legend.position = "none",
+            plot.caption = element_text(family = "Roboto", color = "gray12", size = 14)) +
+      scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+    
+    selected_range <- sort(as.numeric(input$pickWertebereich))
+    p <- p + xlim(selected_range[1], selected_range[2])
+    p
+  }, 
+  # dynamic scaling of the plot
+  height = function() {
+    getPlotHeight()
+  },
+  width = function() {
+    session$clientData$output_plot1_width
+  }
+  )
+  observe({
+    invalidateLater(1000, session) # Überprüft alle 1000 Millisekunden
+    session$clientData$output_plot1_width
+  })
+  
+  observe({
+    width <- input$windowSize$width
+    height <- input$windowSize$height
+    session$clientData$output_plot1_width
   })
   
     
@@ -420,6 +591,7 @@ shinyServer(function(input, output, session) {
                                                  Ursprung)
                               ))
     }
+    session$clientData$output_plot1_width
   })
   
   ## delete rows in data table
@@ -427,6 +599,7 @@ shinyServer(function(input, output, session) {
     req(input[["mydata_rows_selected"]])
     indices <- input[["mydata_rows_selected"]]
     rv$x <- rv$x %>% filter(!row_number() %in% indices)
+    session$clientData$output_plot1_width
   })
   
   ## save comments in datatable
@@ -436,6 +609,7 @@ shinyServer(function(input, output, session) {
     j = info$col + 1 # column index offset of 1 because ID column (rownames) is hidden
     v = info$value
     rv$x[i,j] = v
+    session$clientData$output_plot1_width
   })
   
   ## save table to global variable
@@ -447,6 +621,7 @@ shinyServer(function(input, output, session) {
       title = "Vielen Dank!",
       "Die Tabelle wurde gespeichert."
     ))
+    session$clientData$output_plot1_width
   })
   
   

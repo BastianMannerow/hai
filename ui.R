@@ -10,6 +10,7 @@ library(showtext)
 library(reshape2)
 library(readxl)
 library(DT)
+library(shinyjs)
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
@@ -23,7 +24,25 @@ df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 ### ui
 ui <- fluidPage(
   includeCSS("www/style.css"),
-  #navbarPage("Ausreißer App"),
+  tags$head(
+    tags$script(HTML("
+      $(document).on('shiny:connected', function(event) {
+        function setSizes() {
+          var screenWidth = window.screen.width;
+          var screenHeight = window.screen.height;
+          Shiny.setInputValue('screenSize', {width: screenWidth, height: screenHeight});
+          
+          var width = $(window).width();
+          var height = $(window).height();
+          Shiny.setInputValue('windowSize', {width: width, height: height});
+        }
+        
+        setSizes();
+        
+        $(window).on('resize', setSizes);
+      });
+    "))
+  ),
   tags$a(
     href="https://jil.sh/projekte/hai-kooperative-haushaltsaufstellung-mit-augmented-intelligence/", 
     tags$img(src="HAI_Logo.png", 
@@ -90,64 +109,74 @@ ui <- fluidPage(
       # Adjusts the plot with the corresponding buttons
       tags$head(
         tags$style(HTML("
-          .shiny-fluid-row {
-              display: flex;
-              flex-wrap: nowrap;
-              align-items: stretch;
-              border: 1px solid #D3D3D3;
-              padding-bottom: 34px;
-            }
-          .shiny-column {
-            min-width: 150px;
-            margin-right: 0px;
-          }
-          .buttons-column {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: flex-start;
-            margin-right: -60px;
-            position: relative;
-            z-index: 9999;
-          }
-          .buttons-panel {
-            margin-right: 0px;
-            display: block;
-            width: 100%;
-            border: none;
-            box-shadow: none;
-          }
-          .plot-container {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-          }
-          	          @media screen and (min-aspect-ratio: 16/9) {
-            .buttons-panel {
-              padding-top: 50px;
-            }
-          }
-          @media screen and (max-aspect-ratio: 16/9) {
-            .buttons-panel {
-              padding-top: 58px;
-            }
-          }
-        "))
-      )
-      ,
+      .shiny-fluid-row {
+        display: flex;
+        background-color: transparent;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: flex-start;
+        border: 1px solid #D3D3D3;
+        overflow-x: auto;
+      }
+      .buttons-column {
+        flex: 0 1 auto; 
+        min-width: 120px;
+        width: 8.33%; 
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        position: relative;
+        z-index: 9999;
+      }
+      .shiny-column {
+        flex: 1 1 auto; 
+        width: 91.66%;
+      }
+      .buttons-panel, .plot-container {
+        width: 100%; 
+        display: block;
+         border: none;
+      }
+      .plot-container {
+        background-color: transparent;
+      }
+      @media (max-width: 767px) {
+      .buttons-column, .shiny-column {
+        flex: 1 1 100%; 
+        min-width: 0;
+        }
+      }
+
+    @media (min-width: 768px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -15px;
+      }
+      .shiny-column {
+        align-self: center;
+        flex-grow: 1;
+      }
+    }
+
+  "))
+      ),
       fluidRow(class = "shiny-fluid-row",
-               column(class = "shiny-column buttons-column", width = 1,
+               column(class = "buttons-column", width = 1,
                       wellPanel(class = "buttons-panel", style = "background-color: transparent;",
                                 tags$div(style = "background-color: #197084; color: white; padding: 5px; display: inline-block;", "Details:"),
                                 uiOutput("dynamicButtons")
                       )
                ),
-               column(class = "shiny-column", width = 10,
+               column(class = "shiny-column", width = 11,
                       wellPanel(class = "plot-container", style = "border: 0px solid #D3D3D3;",
-                                plotOutput("plot1", width = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+                                plotOutput("plot1", width = "100%", height = "100%", click = "clicked", hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
                                 uiOutput("hover_info", style = "pointer-events: none"))
                )
       )
+      
     ),
     #-----------------------------------------
   ),
