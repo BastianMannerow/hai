@@ -195,7 +195,7 @@ shinyServer(function(input, output, session) {
           timeSeriesPlot <- ggplot(soll_values, aes(x = year, y = value_soll)) +
             geom_bar(aes(fill = Anomalie), stat = "identity", width = 0.7, show.legend = TRUE) +
             geom_line(data = ist_values, aes(x = year, y = value_ist, color = "Ist-Werte", group = 1), size = 2) +
-            geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +  # Anomalien mit besonderer Farbe
+            geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +
             scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#841919"),
                               name = "Soll-Werte") +
             scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"),
