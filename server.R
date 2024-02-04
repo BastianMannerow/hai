@@ -193,28 +193,31 @@ shinyServer(function(input, output, session) {
           # Time Series
           soll_values$Anomalie <- ifelse(soll_values$year %in% soll_anomalies$Jahr, "Soll-Anomalie", "Soll-Werte")
           timeSeriesPlot <- ggplot(soll_values, aes(x = year, y = value_soll)) +
-            geom_bar(aes(fill = Anomalie), stat = "identity", width = 0.7) +
+            geom_bar(aes(fill = Anomalie), stat = "identity", width = 0.7, show.legend = TRUE) +
             geom_line(data = ist_values, aes(x = year, y = value_ist, color = "Ist-Werte", group = 1), size = 2) +
-            geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +
-            scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#eec82a")) +
-            scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919")) +
-            guides(fill = guide_legend(title = "Legende", override.aes = list(color = NULL)),
-                   color = guide_legend(title = "Legende", override.aes = list(fill = NULL))) +
+            geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +  # Anomalien mit besonderer Farbe
+            scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#841919"),
+                              name = "Soll-Werte") +
+            scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"),
+                               name = "Ist-Werte") +
+            guides(fill = guide_legend(title = "Legende"),
+                   color = guide_legend(title = "Legende")) +
             labs(y = "Absolutwerte") +
             theme_minimal() +
             theme(axis.title.x = element_blank(), 
                   axis.text.x = element_blank(), 
                   axis.ticks.x = element_blank())
           
-          
-          # Difference Plot
+          # Differences
           combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Anomalie", "Negative Differenz")
-          
           detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = Anomalie)) +
-            geom_bar(stat = "identity", aes(fill = ifelse(Anomalie == "Negative Differenz" & difference > 0, "Positive Differenz", Anomalie))) +
+            geom_bar(stat = "identity", aes(fill = ifelse(difference > 0, "Positive Differenz", Anomalie))) +
             geom_hline(yintercept = 0, linetype = "dashed") +
-            scale_fill_manual(values = c("Anomalie" = "#eec82a", "Positive Differenz" = "#288419", "Negative Differenz" = "#841919"), 
-                              name = "Differenztyp") +
+            scale_fill_manual(values = c(
+              "Anomalie" = "#841919",
+              "Positive Differenz" = "#28841980",  # 50% Transparency
+              "Negative Differenz" = "#84191980"  # 50% Transparency
+            ), name = "Differenztyp") +
             labs(y = "Zieldifferenz") +
             theme_minimal() +
             theme(axis.title.x = element_blank())
