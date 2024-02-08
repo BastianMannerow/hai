@@ -111,7 +111,7 @@ ui <- fluidPage(
         tags$style(HTML("
       .shiny-fluid-row {
         display: flex;
-        background-color: transparent;
+        background-color: white;
         flex-wrap: nowrap;
         justify-content: center;
         align-items: flex-start;
