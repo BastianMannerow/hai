@@ -360,16 +360,20 @@ shinyServer(function(input, output, session) {
   
   getPlotHeight <- reactive({
     if(input$screenSize$height == 1200) {
-      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
+      height <- getbutton_height() * (number_of_buttons() + 2.8) + 12
+      print(height)
     }
-    if(input$screenSize$height == 1080) {
+    else if(input$screenSize$height == 1080) {
       #height <- getbutton_height() * (number_of_buttons() + 2) + 12
       height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
     }
-    else{
-      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
+    else if(input$screenSize$height == 720) {
+      #height <- getbutton_height() * (number_of_buttons() + 2) + 12
+      height <- getbutton_height() * (number_of_buttons() + 2.2) + 8
     }
-    return(height)
+    else{ # Apple
+      height <- getbutton_height() * (number_of_buttons() + 1.8) + 12
+    }
   })
   
   getPlotWidth <- reactive({

@@ -118,56 +118,72 @@ ui <- fluidPage(includeCSS("www/style.css"),
       # Adjusts the plot with the corresponding buttons
       tags$head(
         tags$style(HTML("
-        .shiny-fluid-row {
-          display: flex;
-          background-color: white;
-          flex-wrap: nowrap;
-          justify-content: center;
-          align-items: flex-start;
-          border: 1px solid #D3D3D3;
-          overflow-x: auto;
-        }
-        .buttons-column {
-          flex: 0 1 auto; 
-          min-width: 120px;
-          width: 8.33%; 
-          align-self: center;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: flex-start;
-          position: relative;
-          z-index: 9999;
-        }
-        .shiny-column {
-          flex: 1 1 auto; 
-          width: 91.66%;
-        }
-        .buttons-panel, .plot-container {
-          width: 100%; 
-          display: block;
-          border: none;
-        }
-        .plot-container {
-          background-color: transparent;
-        }
-        @media (max-width: 767px) {
-        .buttons-column, .shiny-column {
-          flex: 1 1 100%; 
-          min-width: 0;
-          }
-        }
 
-      @media (min-width: 768px) {
-        .buttons-column {
-          min-width: 120px;
-          margin-right: -38px;
-          margin-top: -15px;
+      .shiny-fluid-row {
+        display: flex;
+        background-color: white;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: flex-start;
+        border: 1px solid #D3D3D3;
+        overflow-x: auto;
+      }
+      .buttons-column {
+        flex: 0 1 auto; 
+        min-width: 120px;
+        width: 8.33%; 
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        position: relative;
+        z-index: 9999;
+      }
+      .shiny-column {
+        flex: 1 1 auto; 
+        width: 91.66%;
+      }
+      .buttons-panel, .plot-container {
+        width: 100%; 
+        display: block;
+         border: none;
+      }
+      .plot-container {
+        background-color: transparent;
+      }
+      
+      @media (max-width: 767px) {
+      .buttons-column, .shiny-column {
+        flex: 1 1 100%; 
+        min-width: 0;
         }
-        .shiny-column {
-          align-self: center;
-          flex-grow: 1;
-        }
+      }
+      
+      @media (min-width: 1920px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -15px;
+      }
+
+    @media (min-width: 1680px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -23px;
+      }
+      
+      @media (min-width: 1280px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -15px;
+      }
+      
+      .shiny-column {
+        align-self: center;
+        flex-grow: 1;
       }
       "))
       ), # Ende head mit CSS Anpassungen
