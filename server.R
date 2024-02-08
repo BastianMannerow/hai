@@ -164,6 +164,10 @@ shinyServer(function(input, output, session) {
           req(selectedTitle())
           title <- selectedTitle()
           
+          purpose <- df_zweck %>%
+            filter(title == Gesamttitel) %>%
+            select(Zweckbestimmung)
+          
           # Get Data
           ist_values <- df_ist %>%
             filter(Gesamttitel == title) %>%
@@ -225,8 +229,9 @@ shinyServer(function(input, output, session) {
           # Combination
           combinedPlot <- timeSeriesPlot / detailPlot +
             plot_layout(guides = "collect") +
-            plot_annotation(title = paste("Soll-Ist-Vergleich:", title)) +
-            theme(plot.margin = margin(1, 1, 1, 1))
+            plot_annotation(title = paste("Titel im Detail: ", title, " - ", purpose)) +
+            theme(plot.margin = margin(1, 1, 1, 1),
+                  plot.title = element_text(size = 12))
           
           return(combinedPlot)
         })
@@ -364,11 +369,9 @@ shinyServer(function(input, output, session) {
       print(height)
     }
     else if(input$screenSize$height == 1080) {
-      #height <- getbutton_height() * (number_of_buttons() + 2) + 12
       height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
     }
     else if(input$screenSize$height == 720) {
-      #height <- getbutton_height() * (number_of_buttons() + 2) + 12
       height <- getbutton_height() * (number_of_buttons() + 2.2) + 8
     }
     else{ # Apple
