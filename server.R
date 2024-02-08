@@ -227,7 +227,7 @@ shinyServer(function(input, output, session) {
           # Combination
           combinedPlot <- timeSeriesPlot / detailPlot +
             plot_layout(guides = "collect") +
-            plot_annotation(title = paste("Titel im Detail: ", title, " - ", purpose)) +
+            plot_annotation(title = paste(title, " - ", purpose)) +
             theme(plot.margin = margin(1, 1, 1, 1),
                   plot.title = element_text(size = 12))
           
