@@ -270,8 +270,16 @@ shinyServer(function(input, output, session) {
     df <- scatterDataframe()
     df <- df[,-1]
     # Checks the interval of the whole dataframe
-    minWert <- min(df, na.rm = TRUE)
-    maxWert <- max(df, na.rm = TRUE)
+    if(all(is.na(df))) {
+      minWert <- 0
+      maxWert <- 1
+    } else {
+      minWert <- min(df, na.rm = TRUE)
+      maxWert <- max(df, na.rm = TRUE)
+    }
+    
+    if(!is.finite(minWert)) minWert <- 0
+    if(!is.finite(maxWert)) maxWert <- 1
     
     # smart logarithmic rounding, to have a reasonable interval between slider inputs
     roundDownToNearest <- function(x) {
