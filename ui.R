@@ -11,6 +11,7 @@ library(reshape2)
 library(readxl)
 library(DT)
 library(shinyjs)
+library(fontawesome)
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
@@ -190,7 +191,8 @@ ui <- fluidPage(includeCSS("www/style.css"),
       fluidRow(class = "shiny-fluid-row", # fluidRow 3, Scatter-Plot
         column(class = "buttons-column", width = 1,
             wellPanel(class = "buttons-panel", style = "background-color: transparent;",
-              tags$div(style = "background-color: #197084; color: white; padding: 5px; display: inline-block;", "Details:"),
+                      tags$div(style = "background-color: #197084; color: white; padding: 5px; display: inline-block; white-space: nowrap;",
+                               "Titel", HTML(paste(rep("&nbsp;", 1), fa("arrow-pointer"), collapse = ""))),
               uiOutput("dynamicButtons")
             )
         ),

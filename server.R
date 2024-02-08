@@ -125,6 +125,13 @@ shinyServer(function(input, output, session) {
   })
   
   # Create buttons for each entry on y axis
+  number_of_buttons <- reactive({
+    df_scatter <- scatterData() 
+    titelListe <- unique(df_scatter$Gesamttitel)
+    length(titelListe)
+  })
+  
+  # Create buttons for each entry on y axis
   output$dynamicButtons <- renderUI({
     df_scatter <- scatterData()
     titelListe <- factor(df_scatter$Gesamttitel)
