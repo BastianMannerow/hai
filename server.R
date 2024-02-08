@@ -278,8 +278,8 @@ shinyServer(function(input, output, session) {
       maxWert <- max(df, na.rm = TRUE)
     }
     
-    if(!is.finite(minWert)) minWert <- 0
-    if(!is.finite(maxWert)) maxWert <- 1
+    #if(!is.finite(minWert)) minWert <- 0
+    #if(!is.finite(maxWert)) maxWert <- 1
     
     # smart logarithmic rounding, to have a reasonable interval between slider inputs
     roundDownToNearest <- function(x) {
