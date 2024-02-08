@@ -69,7 +69,9 @@ ui <- fluidPage(includeCSS("www/style.css"),
                   margin: 10px 15px 10px 15px;", 
       h3("Daten im Überblick"),
   fluidRow(column(3, #fluidRow 2, innere mit Input-Column
-      p("Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an."),
+      p(HTML(paste(fa("filter"))),
+        "Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an."
+      ),
       radioGroupButtons(
         inputId = "pickArt",
         label = "Wählen Sie die Art der Beträge.",
@@ -112,7 +114,8 @@ ui <- fluidPage(includeCSS("www/style.css"),
       uiOutput("outOfRangeMessage"),
     ), # Ende Input column
     column(9, # Plot-Spalte in fluidRow 2
-      p("Bitte markieren Sie in der Graphik, welche Beträge Sie als Ausreißer bewerten. 
+      p(HTML(paste(fa("magnifying-glass-plus"))),
+        "Bitte markieren Sie in der Graphik, welche Beträge Sie als Ausreißer bewerten. 
         Klicken Sie dafür auf einen Datenpunkt. Klicken Sie auf einen Titel, um eine 
         Detailansicht des Haushaltstitels zu öffnen."),
       #--------------------------------------------
