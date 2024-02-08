@@ -204,8 +204,6 @@ shinyServer(function(input, output, session) {
                               name = "Soll-Werte") +
             scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"),
                                name = "Ist-Werte") +
-            guides(fill = guide_legend(title = "Legende"),
-                   color = guide_legend(title = "Legende")) +
             labs(y = "Absolutwerte") +
             theme_minimal() +
             theme(axis.title.x = element_blank(), 
@@ -221,7 +219,7 @@ shinyServer(function(input, output, session) {
               "Anomalie" = "#841919",
               "Positive Differenz" = "#28841980",  # 50% Transparency
               "Negative Differenz" = "#84191980"  # 50% Transparency
-            ), name = "Differenztyp") +
+            ), name = "Differenz: Soll - Ist") +
             labs(y = "Zieldifferenz") +
             theme_minimal() +
             theme(axis.title.x = element_blank())
