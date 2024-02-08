@@ -528,7 +528,8 @@ shinyServer(function(input, output, session) {
               extensions = "Buttons", 
               editable = list(target = "cell", disable = list(columns = c(0, 1, 2))),
               class = 'compact stripe', 
-        caption = "Hier erscheinen Ihre ausgewählten Datenpunke, gern können Sie diese kommentieren.",
+        caption = "Hier erscheinen Ihre ausgewählten Datenpunke. Ergänzen Sie im Kommentar,
+                  warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
         rownames = FALSE, 
         options = list(
           paging = FALSE,
