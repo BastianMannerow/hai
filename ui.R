@@ -142,19 +142,35 @@ ui <- fluidPage(
       .plot-container {
         background-color: transparent;
       }
+      
       @media (max-width: 767px) {
       .buttons-column, .shiny-column {
         flex: 1 1 100%; 
         min-width: 0;
         }
       }
-
-    @media (min-width: 768px) {
+      
+      @media (min-width: 1920px) {
       .buttons-column {
         min-width: 120px;
         margin-right: -38px;
         margin-top: -15px;
       }
+
+    @media (min-width: 1680px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -23px;
+      }
+      
+      @media (min-width: 1280px) {
+      .buttons-column {
+        min-width: 120px;
+        margin-right: -38px;
+        margin-top: -15px;
+      }
+      
       .shiny-column {
         align-self: center;
         flex-grow: 1;
