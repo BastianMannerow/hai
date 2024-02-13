@@ -166,6 +166,18 @@ shinyServer(function(input, output, session) {
   # Define reactiveVal for selected title
   selectedTitle <- reactiveVal()
   
+  # Handles long titles and purposes in the detailed plot with length of n
+  insert_breaks_every_n_chars <- function(s, n = 95) {
+    # dynamic characters to divide it
+    regex <- sprintf("(?<=\\G.{%d})", n)
+    
+    # Divides the string
+    parts <- strsplit(s, split = regex, perl = TRUE)[[1]]
+    paste(parts, collapse = "\n")
+  }
+  
+  
+  
   # Generate the detailed view
   observe({
     df_scatter <- scatterData() 
@@ -185,6 +197,8 @@ shinyServer(function(input, output, session) {
           purpose <- df_zweck %>%
             filter(title == Gesamttitel) %>%
             select(Zweckbestimmung)
+          
+          title_with_breaks <- insert_breaks_every_n_chars(paste(title, " - ", purpose))
           
           # Get Data
           ist_values <- df_ist %>%
@@ -233,7 +247,7 @@ shinyServer(function(input, output, session) {
             theme_minimal() +
             theme(text = element_text(family = plot_font_family), axis.title.x = element_blank())
           
-          combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = paste(title, " - ", purpose)) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = 12, family = plot_font_family))
+          combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = 12, family = plot_font_family))
           
           return(combinedPlot)
         })
