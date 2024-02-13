@@ -21,6 +21,9 @@ font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
+# Variable which regulates the font of all text elements
+plot_font_family <- "Roboto"
+
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
 #df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
@@ -144,17 +147,18 @@ shinyServer(function(input, output, session) {
     buttons <- lapply(sortedTitelListe, function(titel) {
       btn_id <- paste0("button_", gsub(" ", "_", titel))
       
-      # dynamic css
+      # dynamic css with font-family
       actionButton(
         inputId = btn_id,
         label = titel,
         class = "custom-button",
-        style = paste0("font-size: 12px; background-color: #197084; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px;")
+        style = paste0("font-size: 12px; background-color: #197084; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
       )
       
     })
     do.call(tagList, buttons)
   })
+  
   
   # Define reactiveVal for selected title
   selectedTitle <- reactiveVal()
@@ -211,36 +215,22 @@ shinyServer(function(input, output, session) {
             geom_bar(aes(fill = Anomalie), stat = "identity", width = 0.7, show.legend = TRUE) +
             geom_line(data = ist_values, aes(x = year, y = value_ist, color = "Ist-Werte", group = 1), size = 2) +
             geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +
-            scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#841919"),
-                              name = "Soll-Werte") +
-            scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"),
-                               name = "Ist-Werte") +
+            scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#841919"), name = "Soll-Werte") +
+            scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"), name = "Ist-Werte") +
             labs(y = "Absolutwerte") +
             theme_minimal() +
-            theme(axis.title.x = element_blank(), 
-                  axis.text.x = element_blank(), 
-                  axis.ticks.x = element_blank())
+            theme(text = element_text(family = plot_font_family), axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
           
-          # Differences
           combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Anomalie", "Negative Differenz")
           detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = Anomalie)) +
             geom_bar(stat = "identity", aes(fill = ifelse(difference > 0, "Positive Differenz", Anomalie))) +
             geom_hline(yintercept = 0, linetype = "dashed") +
-            scale_fill_manual(values = c(
-              "Anomalie" = "#841919",
-              "Positive Differenz" = "#28841980",  # 50% Transparency
-              "Negative Differenz" = "#84191980"  # 50% Transparency
-            ), name = "Differenz: Soll - Ist") +
+            scale_fill_manual(values = c("Anomalie" = "#841919", "Positive Differenz" = "#28841980", "Negative Differenz" = "#84191980"), name = "Differenz: Soll - Ist") +
             labs(y = "Zieldifferenz") +
             theme_minimal() +
-            theme(axis.title.x = element_blank())
+            theme(text = element_text(family = plot_font_family), axis.title.x = element_blank())
           
-          # Combination
-          combinedPlot <- timeSeriesPlot / detailPlot +
-            plot_layout(guides = "collect") +
-            plot_annotation(title = paste(title, " - ", purpose)) +
-            theme(plot.margin = margin(1, 1, 1, 1),
-                  plot.title = element_text(size = 12))
+          combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = paste(title, " - ", purpose)) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = 12, family = plot_font_family))
           
           return(combinedPlot)
         })
@@ -448,17 +438,17 @@ shinyServer(function(input, output, session) {
       labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
            caption = "Daten des Landes Schleswig-Holstein") +
-      theme(plot.title = element_text(family = "Roboto", size = 20, color = "gray16"),
-            plot.subtitle = element_text(family = "Roboto", size = 18),
+      theme(plot.title = element_text(family = plot_font_family, size = 20, color = "gray16"),
+            plot.subtitle = element_text(family = plot_font_family, size = 18),
             panel.background = element_rect(fill = "grey98"),
-            axis.text.x = element_text(size = 16),
+            axis.text.x = element_text(family = plot_font_family, size = 16),
             axis.text.y = element_blank(),
             axis.title.x = element_blank(),
             axis.ticks.x = element_line(color = "grey40"),
             axis.ticks.y = element_line(color = "grey40"),
             axis.title.y = element_blank(),
             legend.position = "none",
-            plot.caption = element_text(family = "Roboto", color = "gray12", size = 14)) +
+            plot.caption = element_text(family = plot_font_family, color = "gray12", size = 14)) +
       scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
     
     selected_range <- sort(as.numeric(input$pickWertebereich))

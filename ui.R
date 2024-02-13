@@ -25,6 +25,19 @@ df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 ### ui
 ui <- fluidPage(includeCSS("www/style.css"),
   tags$head(
+    tags$style(HTML("
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+      
+      body, html, .shiny-text-output, .shiny-html-output, .shiny-input-container input, .shiny-input-container select, .shiny-input-container textarea {
+        font-family: 'Roboto', sans-serif;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Roboto', sans-serif;
+      }
+    ")),
+    
+    
     tags$script(HTML("$(document).on('shiny:connected', function(event) {
       function setSizes() {
         var screenWidth = window.screen.width;
@@ -122,73 +135,85 @@ ui <- fluidPage(includeCSS("www/style.css"),
       # Adjusts the plot with the corresponding buttons
       tags$head(
         tags$style(HTML("
-
-      .shiny-fluid-row {
-        display: flex;
-        background-color: white;
-        flex-wrap: nowrap;
-        justify-content: center;
-        align-items: flex-start;
-        border: 1px solid #D3D3D3;
-        overflow-x: auto;
-      }
-      .buttons-column {
-        flex: 0 1 auto; 
-        min-width: 120px;
-        width: 8.33%; 
-        align-self: center;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        position: relative;
-        z-index: 9999;
-      }
-      .shiny-column {
-        flex: 1 1 auto; 
-        width: 91.66%;
-      }
-      .buttons-panel, .plot-container {
-        width: 100%; 
-        display: block;
-         border: none;
-      }
-      .plot-container {
-        background-color: transparent;
-      }
-      
-      @media (max-width: 767px) {
-      .buttons-column, .shiny-column {
-        flex: 1 1 100%; 
-        min-width: 0;
+        body, html {
+          font-family: 'Roboto', sans-serif;
         }
-      }
       
-      @media (min-width: 1920px) {
-      .buttons-column {
-        min-width: 120px;
-        margin-right: -38px;
-        margin-top: -15px;
-      }
+        h1, h2, h3, h4, h5, h6 {
+          font-family: 'Roboto', sans-serif;
+        }
+      
+        .shiny-input-container, .shiny-text-output, .shiny-html-output {
+          font-family: 'Roboto', sans-serif;
+        }
+        
 
-    @media (min-width: 1680px) {
-      .buttons-column {
-        min-width: 120px;
-        margin-right: -38px;
-        margin-top: -23px;
-      }
-      
-      @media (min-width: 1280px) {
-      .buttons-column {
-        min-width: 120px;
-        margin-right: -38px;
-        margin-top: -15px;
-      }
-      
-      .shiny-column {
-        align-self: center;
-        flex-grow: 1;
-      }
+        .shiny-fluid-row {
+          display: flex;
+          background-color: white;
+          flex-wrap: nowrap;
+          justify-content: center;
+          align-items: flex-start;
+          border: 1px solid #D3D3D3;
+          overflow-x: auto;
+        }
+        .buttons-column {
+          flex: 0 1 auto; 
+          min-width: 120px;
+          width: 8.33%; 
+          align-self: center;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: flex-start;
+          position: relative;
+          z-index: 9999;
+        }
+        .shiny-column {
+          flex: 1 1 auto; 
+          width: 91.66%;
+        }
+        .buttons-panel, .plot-container {
+          width: 100%; 
+          display: block;
+           border: none;
+        }
+        .plot-container {
+          background-color: transparent;
+        }
+        
+        @media (max-width: 767px) {
+        .buttons-column, .shiny-column {
+          flex: 1 1 100%; 
+          min-width: 0;
+          }
+        }
+        
+        @media (min-width: 1920px) {
+        .buttons-column {
+          min-width: 120px;
+          margin-right: -38px;
+          margin-top: -15px;
+        }
+  
+      @media (min-width: 1680px) {
+        .buttons-column {
+          min-width: 120px;
+          margin-right: -38px;
+          margin-top: -23px;
+        }
+        
+        @media (min-width: 1280px) {
+        .buttons-column {
+          min-width: 120px;
+          margin-right: -38px;
+          margin-top: -15px;
+        }
+        
+        .shiny-column {
+          align-self: center;
+          flex-grow: 1;
+        }
       "))
       ), # Ende head mit CSS Anpassungen
       fluidRow(class = "shiny-fluid-row", # fluidRow 3, Scatter-Plot
