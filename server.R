@@ -538,7 +538,7 @@ shinyServer(function(input, output, session) {
   df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
                                                paste(fa("user"), "User"),
                                                if_else(startsWith(Ursprung, "AI"),
-                                                       paste(fa("microchip"), "AI system"),
+                                                       paste(fa("microchip"), "KI-system"),
                                                        Ursprung)))
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
@@ -620,7 +620,7 @@ shinyServer(function(input, output, session) {
       pointsnear$year <- as.character(pointsnear$year)
       rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
       rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                                 paste(fa("user"), "User"),
+                                                 paste(fa("user"), "Nutzer"),
                                                  if_else(startsWith(Ursprung, "AI"),
                                                  paste(fa("microchip"), "AI system"),
                                                  Ursprung)
