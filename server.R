@@ -451,11 +451,11 @@ shinyServer(function(input, output, session) {
     })
     last_year <- max(last_years, na.rm = TRUE)
     
-    colors <- c("Anomalie" = "red", "Vorjahre" = "grey80", "Aktuell" = "#197084")
+    colors <- c("Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084")
     
     p <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
       geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4) +
+      geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4, alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2)) + 
       labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
            caption = "Daten des Landes Schleswig-Holstein") +
