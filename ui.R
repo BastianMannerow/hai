@@ -101,14 +101,14 @@ ui <- fluidPage(includeCSS("www/style.css"),
       ),
       pickerInput(
         inputId = "pickKapitel",
-        label = "Wählen Sie die Kapitel. ",
+        label = "Kapitel - Auswahl",
         choices = df_kapitel$Kapitel[1:3],
         multiple = TRUE,
         selected = df_kapitel$Kapitel[1:3]
       ),
       pickerInput(
         inputId = "pickTitel",
-        label = "Wählen Sie die Titel. ",
+        label = "Titel - Auswahl",
         choices = df_zweck$Gesamttitel,
         selected = df_zweck$Gesamttitel,
         multiple = TRUE,
