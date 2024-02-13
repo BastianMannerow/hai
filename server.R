@@ -551,22 +551,22 @@ shinyServer(function(input, output, session) {
               extensions = "Buttons", 
               editable = list(target = "cell", disable = list(columns = c(0, 1, 2))),
               class = 'compact stripe', 
-        caption = "Hier erscheinen Ihre ausgewählten Datenpunke. Ergänzen Sie im Kommentar,
-                  warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
-        rownames = FALSE, 
-        options = list(
-          paging = FALSE,
-          searching = FALSE,
-          fixedColumns = FALSE,
-          autoWidth = FALSE,
-          dom = 'Bfrtip',
-          info = FALSE,
-          buttons = list(list(
-            extend = 'collection',
-            buttons = c('csv', 'excel', 'pdf'),
-            text = 'Download Ausreißer-Liste')),
-        ordering = FALSE)
-        )
+              caption = "Hier erscheinen Ihre ausgewählten Datenpunke. Ergänzen Sie im Kommentar, warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
+              rownames = FALSE, 
+              options = list(
+                paging = FALSE,
+                searching = FALSE,
+                fixedColumns = FALSE,
+                autoWidth = FALSE,
+                dom = 'Bfrtip',
+                info = FALSE,
+                buttons = list(list(
+                  extend = 'collection',
+                  buttons = c('csv', 'excel', 'pdf'),
+                  text = 'Download Ausreißer-Liste')),
+                ordering = FALSE,
+                columnDefs = list(list(className = 'dt-center', targets = "_all"))
+              ))
     })
   
   callback <- c(

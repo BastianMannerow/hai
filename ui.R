@@ -233,7 +233,10 @@ ui <- fluidPage(includeCSS("www/style.css"),
     column(6,
       wellPanel(
         h3("Tabelle: Identifizierte Ausreißer"),
-        dataTableOutput('mydata'),
+        div(
+          dataTableOutput('mydata'), 
+          class = "text-center"
+        ),
         actionButton('save_to_global', "Tabelle speichern", style = "margin-top: 20px"),
         actionButton("remove", "Eintrag löschen", style = "margin-top: 20px")
       )
