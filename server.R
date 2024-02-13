@@ -32,7 +32,9 @@ df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel =
 df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
 #df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
 df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
-df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
+df_zweck <- read.table("./Data/hh_sh_ep14_zweck.csv", sep = ",", header = TRUE, 
+                       fileEncoding = "UTF-8", 
+                       colClasses = c(Kapitel="character", Gesamttitel="character"))
 #df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### set up server
