@@ -113,7 +113,11 @@ shinyServer(function(input, output, session) {
   
   # Implements a message to warn the user about non-visible points
   output$outOfRangeMessage <- renderUI({
-    span(style = "color: red;", paste(pointsOutsideRange(), "Datenpunkte liegen nicht im angezeigten Wertebereich."))
+    if (pointsOutsideRange() > 0) {
+      span(style = "color: red;", paste(pointsOutsideRange(), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
+    } else {
+      return(NULL)
+    }
   })
   
   #------------------------------------------------------------------------------
