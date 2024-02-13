@@ -25,15 +25,21 @@ df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 ### ui
 ui <- fluidPage(includeCSS("www/style.css"),
   tags$head(
-    tags$style(HTML("
-      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-      
-      body, html, .shiny-text-output, .shiny-html-output, .shiny-input-container input, .shiny-input-container select, .shiny-input-container textarea {
-        font-family: 'Roboto', sans-serif;
+      tags$style(HTML("
+      @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap');
+  
+      body, html {
+        font-size: 1em !important;
+        /* color: red !important; */
+        font-family: 'Roboto Condensed', sans-serif !important;
       }
-
+  
       h1, h2, h3, h4, h5, h6 {
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto Condensed', sans-serif !important;
+      }
+  
+      .btn, p, .input-group .form-control, .slider .slider-handle, .slider .slider-tick-label {
+        font-family: 'Roboto Condensed', sans-serif !important;
       }
     ")),
     
@@ -81,7 +87,8 @@ ui <- fluidPage(includeCSS("www/style.css"),
                   border: thin solid rgb(220,220,220);
                   margin: 10px 15px 10px 15px;", 
       h3("Daten im Überblick"),
-  fluidRow(column(3, #fluidRow 2, innere mit Input-Column
+  fluidRow(class = "Selection Column",
+           column(3, #fluidRow 2, innere mit Input-Column
       p(HTML(paste(fa("filter"))),
         "Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an."
       ),
@@ -135,19 +142,6 @@ ui <- fluidPage(includeCSS("www/style.css"),
       # Adjusts the plot with the corresponding buttons
       tags$head(
         tags$style(HTML("
-        body, html {
-          font-family: 'Roboto', sans-serif;
-        }
-      
-        h1, h2, h3, h4, h5, h6 {
-          font-family: 'Roboto', sans-serif;
-        }
-      
-        .shiny-input-container, .shiny-text-output, .shiny-html-output {
-          font-family: 'Roboto', sans-serif;
-        }
-        
-
         .shiny-fluid-row {
           display: flex;
           background-color: white;
