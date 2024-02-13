@@ -148,11 +148,14 @@ shinyServer(function(input, output, session) {
       btn_id <- paste0("button_", gsub(" ", "_", titel))
       
       # dynamic css with font-family
+      selected <- ifelse(!is.null(selectedTitle()) && !is.na(selectedTitle()) && titel == selectedTitle(), TRUE, FALSE)
+      backgroundColor <- if(selected) "#841919" else "#197084" # Outlines a clicked button
+      
       actionButton(
         inputId = btn_id,
         label = titel,
         class = "custom-button",
-        style = paste0("font-size: 12px; background-color: #197084; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
+        style = paste0("font-size: 12px; background-color: ", backgroundColor, "; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
       )
       
     })
