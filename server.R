@@ -449,9 +449,11 @@ shinyServer(function(input, output, session) {
     })
     last_year <- max(last_years, na.rm = TRUE)
     
+    colors <- c("Anomalie" = "red", "Vorjahre" = "grey80", "Aktuell" = "#197084")
+    
     p <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
-      geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
-      geom_point(aes(colour = factor(year)), size = 4) +
+      geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) +
+      geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4) +
       labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
            caption = "Daten des Landes Schleswig-Holstein") +
@@ -464,9 +466,9 @@ shinyServer(function(input, output, session) {
             axis.ticks.x = element_line(color = "grey40"),
             axis.ticks.y = element_line(color = "grey40"),
             axis.title.y = element_blank(),
-            legend.position = "none",
             plot.caption = element_text(family = plot_font_family, color = "gray12", size = 14)) +
-      scale_color_manual(values = ifelse(levels(factor(df_scatter$year)) == as.character(last_year), "#197084", "grey80"))
+      scale_color_manual(values = colors) +
+      guides(colour = guide_legend(title = "Legende", override.aes = list(shape = c(16, 16, 16), size = c(5, 4, 4))))
     
     selected_range <- sort(as.numeric(input$pickWertebereich))
     p <- p + xlim(selected_range[1], selected_range[2])
