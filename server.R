@@ -181,12 +181,23 @@ shinyServer(function(input, output, session) {
   selectedTitle <- reactiveVal()
   
   # Handles long titles and purposes in the detailed plot with length of n
-  insert_breaks_every_n_chars <- function(s, n = 95) {
+  insert_breaks_every_n_chars <- function(s, n = 80) {
     # dynamic characters to divide it
-    regex <- sprintf("(?<=\\G.{%d})", n)
+    parts <- c()
     
-    # Divides the string
-    parts <- strsplit(s, split = regex, perl = TRUE)[[1]]
+    while(nchar(s) > n) {
+      pos <- n
+      while(substring(s, pos, pos) != " " && pos > 1) {
+        pos <- pos - 1
+      }
+      if(pos == 1) {
+        pos <- n
+      }
+      parts <- c(parts, substr(s, 1, pos))
+      s <- substr(s, pos + 1, nchar(s))
+    }
+    
+    parts <- c(parts, s)
     paste(parts, collapse = "\n")
   }
   
