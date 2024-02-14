@@ -250,7 +250,14 @@ shinyServer(function(input, output, session) {
             scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"), name = "Ist-Werte") +
             labs(y = "Absolutwerte") +
             theme_minimal() +
-            theme(text = element_text(family = plot_font_family), axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+            theme(text = element_text(family = plot_font_family), 
+                  axis.text.y = element_text(size = normal_text_font_size),
+                  axis.title.x = element_blank(), 
+                  axis.text.x = element_blank(),
+                  legend.text = element_text(size = normal_text_font_size),
+                  legend.title = element_text(size = normal_text_font_size), 
+                  axis.title.y = element_text(size = normal_text_font_size),
+                  axis.ticks.x = element_blank())
           
           combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Anomalie", "Negative Differenz")
           detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = Anomalie)) +
@@ -259,7 +266,13 @@ shinyServer(function(input, output, session) {
             scale_fill_manual(values = c("Anomalie" = "#841919", "Positive Differenz" = "#28841980", "Negative Differenz" = "#84191980"), name = "Differenz: Soll - Ist") +
             labs(y = "Zieldifferenz") +
             theme_minimal() +
-            theme(text = element_text(family = plot_font_family), axis.title.x = element_blank())
+            theme(text = element_text(family = plot_font_family), 
+                  axis.text.x = element_text(size = normal_text_font_size),
+                  axis.text.y = element_text(size = normal_text_font_size),
+                  legend.text = element_text(size = normal_text_font_size),
+                  legend.title = element_text(size = normal_text_font_size),
+                  axis.title.y = element_text(size = normal_text_font_size),
+                  axis.title.x = element_blank())
           
           combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
           
