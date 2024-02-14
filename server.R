@@ -21,8 +21,20 @@ font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
-# Variable which regulates the font of all text elements
+#-------------------------------------------------------------------------------
+# Global Changes
 plot_font_family <- "Roboto"
+legend_size = 5
+mini_headline_font_size <- 16
+
+headline_font_size <- paste0(mini_headline_font_size * 1.5)
+normal_text_font_size <- paste0(mini_headline_font_size * 0.8)
+axis_font_size <- 5
+
+print(headline_font_size)
+print(normal_text_font_size)
+print(axis_font_size)
+#-------------------------------------------------------------------------------
 
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
@@ -157,7 +169,7 @@ shinyServer(function(input, output, session) {
         inputId = btn_id,
         label = titel,
         class = "custom-button",
-        style = paste0("font-size: 12px; background-color: ", backgroundColor, "; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
+        style = paste0("font-size: ", normal_text_font_size , ";background-color: ", backgroundColor, "; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
       )
       
     })
@@ -249,7 +261,7 @@ shinyServer(function(input, output, session) {
             theme_minimal() +
             theme(text = element_text(family = plot_font_family), axis.title.x = element_blank())
           
-          combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = 12, family = plot_font_family))
+          combinedPlot <- timeSeriesPlot / detailPlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
           
           return(combinedPlot)
         })
@@ -377,13 +389,15 @@ shinyServer(function(input, output, session) {
   })
   
   getbutton_height <- reactive({
-    height <- 40
+    numeric_part <- substr(normal_text_font_size, 1, nchar(normal_text_font_size) - 2)
+    calc_temp <- as.numeric(numeric_part) * 3.5
+    height <- calc_temp 
     return(height)
   })
   
   getPlotHeight <- reactive({
     if(input$screenSize$height == 1200) {
-      height <- getbutton_height() * (number_of_buttons() + 2.8) + 12
+      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
       print(height)
     }
     else if(input$screenSize$height == 1080) {
@@ -436,9 +450,10 @@ shinyServer(function(input, output, session) {
     df_scatter <- scatterData()
     if (nrow(df_scatter) == 0) {
       return(ggplot() +
-               annotate("text", x = 10, y = 10, size = 6, 
-                        label = "Keine Titel zur Ansicht ausgewählt.") +
-               theme_void())
+               annotate("text", x = 0.5, y = 0.5, size = 5, 
+                        label = "Keine Titel zur Ansicht ausgewählt.", vjust = 0.5, hjust = 0.5) +
+               theme_void() +
+               xlim(0, 1) + ylim(0, 1))
     }
     
     df_scatter$year <- as.numeric(as.character(df_scatter$year))
@@ -459,18 +474,18 @@ shinyServer(function(input, output, session) {
       labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
            caption = "Daten des Landes Schleswig-Holstein") +
-      theme(plot.title = element_text(family = plot_font_family, size = 20, color = "gray16"),
-            plot.subtitle = element_text(family = plot_font_family, size = 18),
+      theme(plot.title = element_text(family = plot_font_family, size = headline_font_size, color = "gray16"),
+            plot.subtitle = element_text(family = plot_font_family, size = normal_text_font_size ),
             panel.background = element_rect(fill = "grey98"),
-            axis.text.x = element_text(family = plot_font_family, size = 16),
+            axis.text.x = element_text(family = plot_font_family, size = normal_text_font_size ),
             axis.text.y = element_blank(),
             axis.title.x = element_blank(),
             axis.ticks.x = element_line(color = "grey40"),
             axis.ticks.y = element_line(color = "grey40"),
             axis.title.y = element_blank(),
-            plot.caption = element_text(family = plot_font_family, color = "gray12", size = 14)) +
+            plot.caption = element_text(family = plot_font_family, color = "gray12", size = normal_text_font_size )) +
       scale_color_manual(values = colors) +
-      guides(colour = guide_legend(title = "Legende", override.aes = list(shape = c(16, 16, 16), size = c(5, 4, 4))))
+      guides(colour = guide_legend(title = "Legende", override.aes = list(shape = c(16, 16, 16), size = c(legend_size, legend_size, legend_size))))
     
     selected_range <- sort(as.numeric(input$pickWertebereich))
     p <- p + xlim(selected_range[1], selected_range[2])

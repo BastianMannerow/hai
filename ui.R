@@ -27,19 +27,52 @@ ui <- fluidPage(includeCSS("www/style.css"),
   tags$head(
       tags$style(HTML("
       @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap');
-  
+      
+      /* Mini Headlines */
       body, html {
-        font-size: 1em !important;
+        /*font-size: 1em !important;*/
         /* color: red !important; */
         font-family: 'Roboto Condensed', sans-serif !important;
+        color: black !important;
+        font-size: 16px !important;
       }
-  
+      
+      @media (min-width: 1000px) {
+        body, html {
+          font-size: 16px !important;
+        }
+      }
+
+      @media (min-width: 3000px) {
+        body, html {
+          font-size: 32px !important;
+        }
+      }
+      
+      /* Headlines */
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Roboto Condensed', sans-serif !important;
+        color: black !important;
+        font-size: 1.5em !important;
       }
-  
+      
+      /* Dashboard zur Identifikation von Ausreißern in den Haushaltsdaten */
+      h2{
+        font-family: 'Roboto Condensed', sans-serif !important;
+        color: black !important;
+        font-size: 2em !important;
+      }
+      
+      /* Normal text size */
       .btn, p, .input-group .form-control, .slider .slider-handle, .slider .slider-tick-label {
         font-family: 'Roboto Condensed', sans-serif !important;
+        font-size: 0.8em !important;
+      }
+      
+      .buttons-column {
+          min-width: 120px !important;
+          margin-right: -2.375em !important;
+          margin-top: -1.4375em !important;
       }
     ")),
     
@@ -170,7 +203,7 @@ ui <- fluidPage(includeCSS("www/style.css"),
         .buttons-panel, .plot-container {
           width: 100%; 
           display: block;
-           border: none;
+          border: none;
         }
         .plot-container {
           background-color: transparent;
