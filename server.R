@@ -579,9 +579,9 @@ shinyServer(function(input, output, session) {
   df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
   # add the icons
   df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                               paste(fa("user"), "User"),
+                                               paste(fa("user"), "Nutzer"),
                                                if_else(startsWith(Ursprung, "AI"),
-                                                       paste(fa("microchip"), "KI-system"),
+                                                       paste(fa("microchip"), "KI System"),
                                                        Ursprung)))
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
@@ -592,7 +592,7 @@ shinyServer(function(input, output, session) {
     datatable(data,
               escape = FALSE,
               extensions = "Buttons", 
-              editable = list(target = "cell", disable = list(columns = c(0, 1, 2))),
+              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 4))),
               class = 'compact stripe', 
               caption = "Hier erscheinen Ihre ausgewählten Datenpunke. Ergänzen Sie im Kommentar, warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
               rownames = FALSE, 
@@ -665,7 +665,7 @@ shinyServer(function(input, output, session) {
       rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
                                                  paste(fa("user"), "Nutzer"),
                                                  if_else(startsWith(Ursprung, "AI"),
-                                                 paste(fa("microchip"), "AI system"),
+                                                 paste(fa("microchip"), "KI System"),
                                                  Ursprung)
                               ))
     }

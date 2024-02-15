@@ -102,7 +102,6 @@ ui <- fluidPage(includeCSS("www/style.css"),
     span(style = "vertical-align: bottom; 
         font-size: 1.5em; 
         color: rgb(0,143,168);
-        font-family: monospace;
         font-weight: bold;", 
         "aushalt Schleswig-Holstein"),
     tags$a(
