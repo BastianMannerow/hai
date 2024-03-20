@@ -233,8 +233,7 @@ shinyServer(function(input, output, session) {
             filter(Gesamttitel == title) %>%
             gather(key = "year", value = "value_soll", -Gesamttitel)
           combined_df <- left_join(ist_values, soll_values, by = "year") %>%
-            mutate(difference = value_soll - value_ist,
-                   fill_color = ifelse(difference < 0, "Negative Differenz", "Positive Differenz"))
+            mutate(difference = value_soll - value_ist)
           
           # Handle NA
           ist_values <- na.omit(ist_values)
@@ -253,10 +252,11 @@ shinyServer(function(input, output, session) {
           
           # Time Series
           soll_values$Anomalie <- ifelse(soll_values$year %in% soll_anomalies$Jahr, "Soll-Anomalie", "Soll-Werte")
+          ist_values$Anomalie <- ifelse(ist_values$year %in% ist_anomalies$Jahr, "Ist-Anomalie", "Ist-Werte")
           timeSeriesPlot <- ggplot(soll_values, aes(x = year, y = value_soll)) +
             geom_bar(aes(fill = Anomalie), stat = "identity", width = 0.7, show.legend = TRUE) +
-            geom_line(data = ist_values, aes(x = year, y = value_ist, color = "Ist-Werte", group = 1), size = 2) +
-            geom_point(data = ist_anomalies, aes(x = Jahr, y = Wert, color = "Ist-Anomalie"), size = 5) +
+            geom_line(data = ist_values, aes(x = year, y = value_ist), color = "#197084", size = 2, group = 1) +
+            geom_point(data = ist_values, aes(x = year, y = value_ist, color = Anomalie), size = 5) +
             scale_fill_manual(values = c("Soll-Werte" = "#d3d3d3", "Soll-Anomalie" = "#841919"), name = "Soll-Werte") +
             scale_color_manual(values = c("Ist-Werte" = "#197084", "Ist-Anomalie" = "#841919"), name = "Ist-Werte") +
             labs(y = "Absolutwerte") +
@@ -266,15 +266,15 @@ shinyServer(function(input, output, session) {
                   axis.title.x = element_blank(), 
                   axis.text.x = element_blank(),
                   legend.text = element_text(size = normal_text_font_size),
-                  legend.title = element_text(size = normal_text_font_size), 
+                  legend.title = element_text(size = normal_text_font_size),
                   axis.title.y = element_text(size = normal_text_font_size),
                   axis.ticks.x = element_blank())
           
-          combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Anomalie", "Negative Differenz")
-          detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = Anomalie)) +
-            geom_bar(stat = "identity", aes(fill = ifelse(difference > 0, "Positive Differenz", Anomalie))) +
+          combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Diff-Anomalie", "Differenz")
+          detailPlot <- ggplot(combined_df, aes(x = year, y = difference)) +
+            geom_bar(stat = "identity", aes(fill = Anomalie)) +
             geom_hline(yintercept = 0, linetype = "dashed") +
-            scale_fill_manual(values = c("Anomalie" = "#841919", "Positive Differenz" = "#28841980", "Negative Differenz" = "#84191980"), name = "Differenz: Soll - Ist") +
+            scale_fill_manual(values = c("Diff-Anomalie" = "#841919", "Differenz" = "#84191980"), name = "Differenz: Soll - Ist") +
             labs(y = "Zieldifferenz") +
             theme_minimal() +
             theme(text = element_text(family = plot_font_family), 
@@ -493,7 +493,7 @@ shinyServer(function(input, output, session) {
     colors <- c("Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084")
     
     p <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
-      geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) +
+      geom_point(data = selected(), aes(x = value, y = Gesamttitel), colour = "red", fill = "white", shape = 21, size = 5, stroke = 1.0) +
       geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4, alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2)) + 
       labs(title = scatterTitle(),
            subtitle = "Einzelplan 14",
@@ -575,12 +575,12 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  # initialize a tibble with anomalies from AI output (artifical data, not real)
-  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
+  # initialize a tibble with anomalies from AI output (iForest on 3 specific titles)
+  df_new <- read_csv("./Data/hh_sh_ep14_anomalies_iForest.csv", col_types = "cccdcc")
   # add the icons
   df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
                                                paste(fa("user"), "Nutzer"),
-                                               if_else(startsWith(Ursprung, "AI"),
+                                               if_else(startsWith(Ursprung, "KI"),
                                                        paste(fa("microchip"), "KI System"),
                                                        Ursprung)))
   # save the tibble as reactive value
@@ -664,7 +664,7 @@ shinyServer(function(input, output, session) {
       rv$x <- rv$x %>% bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
       rv$x <- rv$x %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
                                                  paste(fa("user"), "Nutzer"),
-                                                 if_else(startsWith(Ursprung, "AI"),
+                                                 if_else(startsWith(Ursprung, "KI"),
                                                  paste(fa("microchip"), "KI System"),
                                                  Ursprung)
                               ))
