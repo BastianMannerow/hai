@@ -38,15 +38,19 @@ print(axis_font_size)
 
 ### get data
 df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
+df_ist <- df_ist %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
 #df_ist <- slice(df_ist, 21:40) # subset (20 rows), can be uncommented later
 df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
+df_soll <- df_soll %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
 #df_soll <- slice(df_soll, 21:40) # subset (20 rows), can be uncommented later
 df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
+df_diff <- df_diff %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
 #df_diff <- slice(df_diff, 21:40) # subset (20 rows), can be uncommented later
 df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
 df_zweck <- read.table("./Data/hh_sh_ep14_zweck.csv", sep = ",", header = TRUE, 
                        fileEncoding = "UTF-8", 
                        colClasses = c(Kapitel="character", Gesamttitel="character"))
+df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
 #df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### set up server
@@ -583,6 +587,9 @@ shinyServer(function(input, output, session) {
                                                if_else(startsWith(Ursprung, "KI"),
                                                        paste(fa("microchip"), "KI System"),
                                                        Ursprung)))
+  # add spaces in Titel for making reading them easier
+  df_new <- df_new %>% mutate(Titel = paste(substr(Titel,1,4), substr(Titel,5,6), substr(Titel,7,9), sep = " "))
+  
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
   
@@ -669,6 +676,14 @@ shinyServer(function(input, output, session) {
                                                  Ursprung)
                               ))
     }
+    showModal(modalDialog(
+      title = "Der Punkt wurde als Ausreißer markiert.",
+      "Die Tabelle wurde aktualisiert.",
+      easyClose = TRUE,
+      fade = TRUE,
+      footer = NULL,
+      size = "s"
+    ))
     session$clientData$output_plot1_width
   })
   
@@ -697,7 +712,8 @@ shinyServer(function(input, output, session) {
     # Pop-Up Dialog after table was saved, more information here: https://shiny.rstudio.com/reference/shiny/latest/modaldialog
     showModal(modalDialog(
       title = "Vielen Dank!",
-      "Die Tabelle wurde gespeichert."
+      "Die Tabelle wurde gespeichert.",
+      footer = modalButton("Ok.")
     ))
     session$clientData$output_plot1_width
   })
