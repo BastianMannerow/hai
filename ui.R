@@ -20,7 +20,7 @@ options(scipen = 999)
 # load data 
 df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
 df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
-df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
+df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,7), substr(Gesamttitel,8,9), sep = " "))
 #df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### ui
