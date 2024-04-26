@@ -534,7 +534,7 @@ shinyServer(function(input, output, session) {
     })
     last_year <- max(last_years, na.rm = TRUE)
     
-    colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "#841919")
+    colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red")
     
     
     p <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
