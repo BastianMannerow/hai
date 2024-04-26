@@ -20,8 +20,7 @@ options(scipen = 999)
 # load data 
 df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
 df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
-df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,7), substr(Gesamttitel,8,9), sep = " "))
-#df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
+df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
 
 ### ui
 ui <- fluidPage(includeCSS("www/style.css"),
@@ -75,6 +74,11 @@ ui <- fluidPage(includeCSS("www/style.css"),
           margin-right: -2.375em !important;
           margin-top: -1.4375em !important;
       }
+      .custom-button:hover {
+        background-color: #555;
+        color: white;
+      }
+      
     ")),
     
     
@@ -135,9 +139,9 @@ ui <- fluidPage(includeCSS("www/style.css"),
       pickerInput(
         inputId = "pickKapitel",
         label = "Kapitel - Auswahl",
-        choices = df_kapitel$Kapitel,
+        choices = df_kapitel$Kapitel[1:3],
         multiple = TRUE,
-        selected = df_kapitel$Kapitel
+        selected = df_kapitel$Kapitel[1:3]
       ),
       pickerInput(
         inputId = "pickTitel",
