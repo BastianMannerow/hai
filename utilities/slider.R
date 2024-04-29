@@ -2,15 +2,13 @@
 
 updateTimeSlider <- function(session, scatterDataframe) {
   observe({
-    years <- names(scatterDataframe())[-1] # Annahme: Gesamttitel ist die erste Spalte
-    years <- years[!grepl("Anomalie", years)] # Filter out 'Anomalie'
+    years <- names(scatterDataframe())[-1]
+    years <- years[!grepl("Anomalie", years)]
     years <- as.character(years)
     
     updateSliderTextInput(session, "pickZeitraum",
                           choices = years,
                           selected = c(years[1], tail(years, 1)))
-    
-    # Die Funktion gibt die aktuelle Breite des Plots zurück
     session$clientData$output_plot1_width
   })
 }
