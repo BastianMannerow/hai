@@ -39,3 +39,25 @@ generateDifferencePlot <- function(combined_df, diff_anomalies, plot_font_family
           axis.title.y = element_text(size = normal_text_font_size),
           axis.title.x = element_blank())
 }
+
+# To call this function: 
+# Handles long titles and purposes in the detailed plot with length of n (Currently not used)
+insert_breaks_every_n_chars <- function(s, n = 80) {
+  # dynamic characters to divide it
+  parts <- c()
+  
+  while(nchar(s) > n) {
+    pos <- n
+    while(substring(s, pos, pos) != " " && pos > 1) {
+      pos <- pos - 1
+    }
+    if(pos == 1) {
+      pos <- n
+    }
+    parts <- c(parts, substr(s, 1, pos))
+    s <- substr(s, pos + 1, nchar(s))
+  }
+  
+  parts <- c(parts, s)
+  paste(parts, collapse = "\n")
+}

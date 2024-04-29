@@ -18,6 +18,7 @@ library(shinyjs)
 
 # own methods
 source("plots/detailedView.R")
+source("utilities/dynamicButtons.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -178,67 +179,14 @@ shinyServer(function(input, output, session) {
   })
   
   # Create buttons for each entry on y axis
-  number_of_buttons <- reactive({
-    df_scatter <- scatterData() 
-    titelListe <- unique(df_scatter$Gesamttitel)
-    length(titelListe)
-  })
-  
-  # Create buttons for each entry on y axis
   output$dynamicButtons <- renderUI({
     df_scatter <- scatterData()
-    titelListe <- factor(df_scatter$Gesamttitel)
-    sortedTitelListe <- rev(levels(titelListe))
-    
-    buttons <- lapply(sortedTitelListe, function(titel) {
-      btn_id <- paste0("button_", gsub(" ", "_", titel))
-      
-      selected <- !is.null(selectedTitle()) && !is.na(selectedTitle()) && titel == selectedTitle()
-      backgroundColor <- if(selected) "#841919" else "#197084"
-      
-      # Name for the tooltip while hovering
-      purpose <- df_zweck %>%
-        filter(Gesamttitel == titel) %>%
-        pull(Zweckbestimmung)
-      
-      tooltipText <- if (length(purpose) > 0) purpose else "Kein Zweck definiert"
-      
-      actionButton(
-        inputId = btn_id,
-        label = titel,
-        title = tooltipText,
-        class = "custom-button",
-        style = paste0("font-size: ", normal_text_font_size, ";background-color: ", backgroundColor, "; color: white; height: ", getbutton_height(), "px; width: ", getbutton_width(), "px; font-family: '", plot_font_family, "';")
-      )
-    })
-    do.call(tagList, buttons)
+    generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
   })
   
   
   # Define reactiveVal for selected title
   selectedTitle <- reactiveVal()
-  
-  # Handles long titles and purposes in the detailed plot with length of n
-  insert_breaks_every_n_chars <- function(s, n = 80) {
-    # dynamic characters to divide it
-    parts <- c()
-    
-    while(nchar(s) > n) {
-      pos <- n
-      while(substring(s, pos, pos) != " " && pos > 1) {
-        pos <- pos - 1
-      }
-      if(pos == 1) {
-        pos <- n
-      }
-      parts <- c(parts, substr(s, 1, pos))
-      s <- substr(s, pos + 1, nchar(s))
-    }
-    
-    parts <- c(parts, s)
-    paste(parts, collapse = "\n")
-  }
-  
   
   
   # Generate the detailed view
@@ -261,7 +209,6 @@ shinyServer(function(input, output, session) {
             filter(title == Gesamttitel) %>%
             select(Zweckbestimmung)
           
-          title_with_breaks <- insert_breaks_every_n_chars(paste(title, " - ", purpose))
           # Get Data and removes Anomalie in year, whch ensures a clean x axis.
           ist_values <- df_ist %>%
             filter(Gesamttitel == title) %>%
@@ -298,8 +245,6 @@ shinyServer(function(input, output, session) {
           diff_anomalies <- anomalies %>% 
             filter(Art == "Diff")
           
-          
-          
           # Time Series
           timeSeriesPlot = generateTimeSeriesPlot(soll_values, ist_values, soll_anomalies, ist_anomalies, plot_font_family, normal_text_font_size)
           
@@ -307,6 +252,7 @@ shinyServer(function(input, output, session) {
           differencePlot = generateDifferencePlot(combined_df, diff_anomalies, plot_font_family, normal_text_font_size)
           
           # Combine the Plots
+          title_with_breaks <- insert_breaks_every_n_chars(paste(title, " - ", purpose))
           combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
           
           return(combinedPlot)
@@ -560,7 +506,7 @@ shinyServer(function(input, output, session) {
     session$clientData$output_plot1_width
   })
   
-    
+  
   ## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
@@ -580,7 +526,7 @@ shinyServer(function(input, output, session) {
     # the right or bottom edge of plotting changes the position of the tooltip panel
     if (h_pct < 0.8 && v_pct < 0.8){
       style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                    "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y +2, "px;")
+                      "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y +2, "px;")
     } else if (h_pct >=0.8 && v_pct <0.8){ # cursor close to right edge
       style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
                       "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y +2, "px;")
@@ -606,10 +552,10 @@ shinyServer(function(input, output, session) {
   
   # add the icons
   df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                               paste(fa("user"), "Nutzer"),
-                                               if_else(startsWith(Ursprung, "AI"),
-                                                       paste(fa("microchip"), "KI System"),
-                                                       Ursprung)))
+                                                 paste(fa("user"), "Nutzer"),
+                                                 if_else(startsWith(Ursprung, "AI"),
+                                                         paste(fa("microchip"), "KI System"),
+                                                         Ursprung)))
   # save the tibble as reactive value
   rv <- reactiveValues(x = df_new)
   
@@ -765,8 +711,6 @@ shinyServer(function(input, output, session) {
     ))
     session$clientData$output_plot1_width
   })
-  
-  
 })
 
 
