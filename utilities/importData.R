@@ -1,3 +1,5 @@
+library(readr)
+library(dplyr)
 
 importDFIst <- function(){
   df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
@@ -39,4 +41,19 @@ addingAnomalyColumn <- function(df){
     mutate(across(matches("^[0-9]"), ~., .names = "{.col}_Anomalie")) %>%
     mutate(across(ends_with("Anomalie"), ~ 0))
   return(df)
+}
+
+importDFAnomaly <- function() {
+  # Laden des Datensatzes
+  df_anomaly <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
+  
+  # Hinzufügen von Icons basierend auf dem Ursprung der Daten
+  df_anomaly <- df_anomaly %>% 
+    mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                              paste(fa("user"), "Nutzer"),
+                              if_else(startsWith(Ursprung, "AI"),
+                                      paste(fa("microchip"), "KI System"),
+                                      Ursprung)))
+  
+  return(df_anomaly)
 }

@@ -1,8 +1,6 @@
 ###################### server for marking outliers app ######################
 ### load libraries
 library(rsconnect)
-#library(easypackages)
-#libraries("shiny", "tidyverse", "sysfonts", "showtext", "dplyr", "reshape2", "readxl", "DT")
 library(shiny)
 library(tidyverse)
 library(sysfonts)
@@ -27,6 +25,7 @@ source("utilities/importData.R")
 source("utilities/calculateMainPlotHeight.R")
 source("utilities/handleWindowInput.R")
 source("utilities/plotAnomalyTableAdapter.R")
+source("utilities/dataFiltering.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -50,10 +49,7 @@ df_soll <- importDFSoll()
 df_diff <- importDFDiff()
 df_kapitel <- importDFKapitel()
 df_zweck <- importDFZweck()
-
-
-# a persistent anomaly dataframe to distinguish between AI and User
-anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = numeric(), Anomalie = logical()))
+df_anomaly <- importDFAnomaly()
 
 ### set up server
 shinyServer(function(input, output, session) {
@@ -65,150 +61,55 @@ shinyServer(function(input, output, session) {
   ## Make a point unclicked
   last_click <- reactiveVal(NULL)
   
-  # Define reactiveVal for selected title
-  selectedTitle <- reactiveVal()
-  
-  # initialize a tibble with anomalies from AI output (artifical data, not real)
-  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
-  
-  # add the icons
-  df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                                 paste(fa("user"), "Nutzer"),
-                                                 if_else(startsWith(Ursprung, "AI"),
-                                                         paste(fa("microchip"), "KI System"),
-                                                         Ursprung)))
-  ## df to save anomaly points (from the table) for coloring in the plot
-  selected <- reactive({
-    ## get data from rv$x to the same structure like in df and 
-    # filter curr_art (Betragsart) and input$pickTitel
-    if (curr_art() == "df_ist"){
-      selected_points <- rv$x %>% filter(Art == "Ist") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    } else if (curr_art() == "df_soll"){
-      selected_points <- rv$x %>% filter(Art == "Soll") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    } else{
-      selected_points <- rv$x %>% filter(Art == "Diff") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    }
-    if (!is.null(input$pickTitel)){
-      selected_points <- filter(selected_points, Gesamttitel %in% input$pickTitel)
-    }
-    
-    # Update Ursprung column based on presence of "Nutzer"
-    selected_points <- selected_points %>%
-      mutate(Ursprung = str_detect(Ursprung, "Nutzer"))
-    
-    return(selected_points)
-  })
-  
-  # save the tibble as reactive value
-  rv <- reactiveValues(x = df_new)
-  
-  scatterTitle <- reactive({
-    if (input$pickArt == "df_ist"){
-      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_soll"){
-      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_diff"){
-      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
-    }
-    return(titel)
-  })
-  
-  ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
-  # reaktiver Platzhalter für aktuelles df
-  reac_data <- reactive({
-    get(input$pickArt)
-  })
+  # Handles the data filtering based on user input
   curr_art <- reactiveVal()
   observe({
     curr_art(input$pickArt)
   })
   
+  # The selected title, needed for dynamic buttons and detail view
+  selectedTitle <- reactiveVal()
+  
+  # an anomaly dataframe to distinguish between AI and User
+  anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = numeric(), Anomalie = logical()))
+  
+  # the dataframe for the anomalies presented in the table
+  anomaly_table <- reactiveValues(x = df_anomaly)
+  
+  # df to save anomaly points (from the table) for coloring in the plot
+  selected <- createSelectedPoints(input, anomaly_table, curr_art)
+  
+  # Function to generate the title for mainPlot based on user selection
+  scatterTitle <- createScatterTitle(input)
+  
+  # data when a category is picked by the user (soll, ist, diff)
+  pickedCategoryDataframe <- reactive({
+    get(input$pickArt)
+  })
+  
   # save current choices from pickTitel in a reactive value, to save them as selected 
-  # when pickKapitel is changed, further reading: https://stackoverflow.com/questions/60122122/shiny-observeevent-updateselectinput-inputs-resetting
   current_titel <- reactiveVal()
   observe({
     current_titel(input$pickTitel)
     session$clientData$output_plot1_width
   })
   
-  ## filter data for scatter plot
-  scatterData <- reactive({
-    selected_years <- as.numeric(input$pickZeitraum)
-    selected_values <- input$pickWertebereich
-    selected_title <- input$pickTitel
-    numeric_cols <- names(reac_data())[!grepl("Anomalie", names(reac_data())) & sapply(reac_data(), is.numeric)]
-    df_scatter <- melt(reac_data(), id.vars = "Gesamttitel", measure.vars = numeric_cols)
-    colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
-    df_scatter$year <- as.numeric(as.character(df_scatter$year))
-    
-    df_scatter <- df_scatter %>%
-      filter(year >= selected_years[1] & year <= selected_years[2],
-             value >= selected_values[1] & value <= selected_values[2],
-             Gesamttitel %in% selected_title)
-    
-    df_scatter$anomaly <- sapply(1:nrow(df_scatter), function(i) {
-      row <- df_scatter[i,]
-      anomaly_col_name <- paste0(row$year, "_Anomalie")
-      if(anomaly_col_name %in% names(reac_data())) {
-        # searches for the anomaly based on year and title
-        anomaly_value <- reac_data()[reac_data()$Gesamttitel == row$Gesamttitel, anomaly_col_name]
-        # handles empty entries
-        if(length(anomaly_value) > 0 && !is.na(anomaly_value)) {
-          return(anomaly_value)
-        } else {
-          return(NA)
-        }
-      } else {
-        return(NA)
-      }
-    })
-    
-    # override persistent anomaly clicks
-    df_scatter$anomaly <- mapply(function(title, year) {
-      any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)
-    }, df_scatter$Gesamttitel, df_scatter$year)
-    
-    return(df_scatter)
-  })
+  ## filter data for the main plot
+  scatterData <- createScatterData(input, pickedCategoryDataframe, anomalies)
   
-  # Receive relevant data
-  scatterDataframe <- reactive({
-    if (input$pickArt == "df_ist"){
-      dataframe <- df_ist
-    } else if (input$pickArt == "df_soll"){
-      dataframe <- df_soll
-    } else if (input$pickArt == "df_diff"){
-      dataframe <- df_diff
-    }
-    selected_title <- input$pickTitel
-    dataframe <- dataframe %>%
-      filter(Gesamttitel %in% selected_title)
-    
-    return(dataframe)
-  })
-  
-  # ---------------------------------------------------------------------------- Switch between dataframes in view
-  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
-  observeEvent(input$pickKapitel, {
-    updatePickerInput(
-      session = session,
-      inputId = "pickTitel",
-      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
-      selected = current_titel())
-  }, ignoreInit = TRUE)
-  
-  
+  # dataframe for the sliders
+  sliderDataframe <- createSliderDataframe(input, df_ist, df_soll, df_diff)
   
   #------------------------------------------------------------------------------ Functionality
+  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
+  updateTitleChoices(input, session, df_zweck, current_titel)
+  
   # Warns about missing datapoints
-  output$outOfRangeMessage <- generateOutOfRangeMessage(reac_data, input, pointsOutsideRange, scatterData)
+  output$outOfRangeMessage <- generateOutOfRangeMessage(pickedCategoryDataframe, input, pointsOutsideRange, scatterData)
   
   # Overrides the time and value slider for a dynamic effect
-  dynamicSlider <- updateTimeSlider(session, scatterDataframe)
-  updateValueSlider(session, scatterDataframe)
+  dynamicSlider <- updateTimeSlider(session, sliderDataframe)
+  updateValueSlider(session, sliderDataframe)
   
   # Calculates the button and plot height and width
   getbutton_width <- reactive({
@@ -227,13 +128,13 @@ shinyServer(function(input, output, session) {
     generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
   })
   
-  # Checks if a button was pressed
+  # Checks if a dynamic button was pressed
   observe({
     df_scatter <- scatterData()
     observeButtonPress(input, df_scatter, selectedTitle)
   })
   # Adapter between MainPlot and Anomaly Tabelle
-  setupAnomalyInteractions(input, output, session, rv, curr_art, scatterData, last_click, anomalies)
+  setupAnomalyInteractions(input, output, session, anomaly_table, curr_art, scatterData, last_click, anomalies)
   
   #------------------------------------------------------------------------------ Visualisation
   ## visualize the main plot
@@ -243,13 +144,13 @@ shinyServer(function(input, output, session) {
   
   # Generate the detailed view
   observeEvent(selectedTitle(), {
-    generateDetailPlot(df_scatter, df_zweck, df_ist, df_soll, rv, selectedTitle,
+    generateDetailPlot(df_scatter, df_zweck, df_ist, df_soll, anomaly_table, selectedTitle,
                        plot_font_family, normal_text_font_size, mini_headline_font_size, output)
   })
   
   ## Anomaly Table
-  output$mydata <- generateAnomalyTable(rv)
-  setupDataTableInteractions(rv, session, input)
+  output$mydata <- generateAnomalyTable(anomaly_table)
+  setupDataTableInteractions(anomaly_table, session, input)
   callback <- c(
     '$("#remove").on("click", function(){',
     '  table.rows(".selected").remove().draw();',

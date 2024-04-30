@@ -99,3 +99,15 @@ generateMainPlotHoverInfo <- function(input, scatterData, nearPoints) {
     )
   })
 }
+
+# toggles the view based on the chosen chapter
+updateTitleChoices <- function(input, session, df_zweck, current_titel) {
+  observeEvent(input$pickKapitel, {
+    updatePickerInput(
+      session = session,
+      inputId = "pickTitel",
+      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
+      selected = current_titel()
+    )
+  }, ignoreInit = TRUE)
+}
