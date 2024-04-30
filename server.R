@@ -23,6 +23,7 @@ source("utilities/dynamicButtons.R")
 source("utilities/slider.R")
 source("utilities/pointsNotVisibleWarning.R")
 source("utilities/importData.R")
+source("utilities/calculateMainPlotHeight.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -53,6 +54,41 @@ anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = 
 
 ### set up server
 shinyServer(function(input, output, session) {
+  # ---------------------------------------------------------------------------
+  # Receiving the screen Input
+  getPlotWidth <- reactive({
+    #width <- 1200 * (1903/input$screenSize$width)
+    width <- 1200 * (input$windowSize$width/1903)
+    #width <- 1200
+    return(width)
+  })
+  
+  observeEvent(input$screenSize, {
+    screen_width <- input$screenSize$width
+    screen_height <- input$screenSize$height
+    message(paste("Aktuelle Bildschirmauflösung: Breite =", screen_width, "Höhe =", screen_height))
+  })
+  
+  observe({
+    width <- input$windowSize$width
+    height <- input$windowSize$height
+    # message(paste("Aktuelle Fenstergröße: Breite =", width, "Höhe =", height))
+  })
+  
+  # triggers refreshing of the mainPlot
+  observe({
+    invalidateLater(1000, session) # checks all 1000 milliseconds
+    session$clientData$output_plot1_width
+  })
+  
+  observe({
+    width <- input$windowSize$width
+    height <- input$windowSize$height
+    session$clientData$output_plot1_width
+  })
+  # ---------------------------------------------------------------------------
+  
+  
   ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
   # reaktiver Platzhalter für aktuelles df
   reac_data <- reactive({
@@ -62,6 +98,7 @@ shinyServer(function(input, output, session) {
   observe({
     curr_art(input$pickArt)
   })
+  
   # save current choices from pickTitel in a reactive value, to save them as selected 
   # when pickKapitel is changed, further reading: https://stackoverflow.com/questions/60122122/shiny-observeevent-updateselectinput-inputs-resetting
   current_titel <- reactiveVal()
@@ -69,6 +106,7 @@ shinyServer(function(input, output, session) {
     current_titel(input$pickTitel)
     session$clientData$output_plot1_width
   })
+  
   # when pickKapitel is changed, the choices for pickTitel are changed accordingly
   observeEvent(input$pickKapitel, {
     updatePickerInput(
@@ -97,9 +135,9 @@ shinyServer(function(input, output, session) {
       row <- df_scatter[i,]
       anomaly_col_name <- paste0(row$year, "_Anomalie")
       if(anomaly_col_name %in% names(reac_data())) {
-        # Sucht den Anomaliewert basierend auf dem Gesamttitel und dem Jahr
+        # searches for the anomaly based on year and title
         anomaly_value <- reac_data()[reac_data()$Gesamttitel == row$Gesamttitel, anomaly_col_name]
-        # Stellt sicher, dass der Anomaliewert nicht leer oder NA ist
+        # handles empty entries
         if(length(anomaly_value) > 0 && !is.na(anomaly_value)) {
           return(anomaly_value)
         } else {
@@ -118,6 +156,7 @@ shinyServer(function(input, output, session) {
     return(df_scatter)
   })
   
+  #------------------------------------------------------------------------------
   # Warns about missing datapoints
   output$outOfRangeMessage <- renderUI({
     if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
@@ -127,18 +166,10 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  #------------------------------------------------------------------------------
-  # Count the amount of buttons, to scale the plot in ui.R
-  number_of_buttons <- reactive({
-    df_scatter <- scatterData() 
-    titelListe <- unique(df_scatter$Gesamttitel)
-    length(titelListe)
-  })
-  
   # Create buttons for each entry on y axis
   output$dynamicButtons <- renderUI({
     df_scatter <- scatterData()
-    generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
+    generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getButtonHeight, getbutton_width)
   })
   
   
@@ -240,68 +271,23 @@ shinyServer(function(input, output, session) {
   # Overrides the value slider for a dynamic effect
   updateValueSlider(session, scatterDataframe)
   
-  # dynamic scaling for plot and button
+  #------------------------------------------------------------------------------
+  # Calculates the main plots height
+  
+  # Count the amount of buttons, to scale the plot in ui.R
   getbutton_width <- reactive({
-    width <- session$clientData$output_buttonsPanel_width
-    #width <- 100
-    return(width)
+    getButtonWidth(session)
   })
   
-  getbutton_height <- reactive({
-    numeric_part <- substr(normal_text_font_size, 1, nchar(normal_text_font_size) - 2)
-    calc_temp <- as.numeric(numeric_part) * 3.5
-    height <- calc_temp 
-    return(height)
+  getButtonHeight <- reactive({
+    calculateButtonHeight(normal_text_font_size)
   })
   
   getPlotHeight <- reactive({
-    if(input$screenSize$height == 1200) {
-      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
-    }
-    else if(input$screenSize$height == 1080) {
-      height <- getbutton_height() * (number_of_buttons() + 2.6) + 12
-    }
-    else if(input$screenSize$height == 720) {
-      height <- getbutton_height() * (number_of_buttons() + 2.2) + 8
-    }
-    else{ # Apple
-      height <- getbutton_height() * (number_of_buttons() + 1.8) + 12
-    }
+    calculatePlotHeight (input, normal_text_font_size, scatterData, session)
   })
   
-  getPlotWidth <- reactive({
-    #width <- 1200 * (1903/input$screenSize$width)
-    width <- 1200 * (input$windowSize$width/1903)
-    #width <- 1200
-    return(width)
-  })
-  
-  observeEvent(input$screenSize, {
-    screen_width <- input$screenSize$width
-    screen_height <- input$screenSize$height
-    message(paste("Aktuelle Bildschirmauflösung: Breite =", screen_width, "Höhe =", screen_height))
-  })
-  
-  observe({
-    width <- input$windowSize$width
-    height <- input$windowSize$height
-    # message(paste("Aktuelle Fenstergröße: Breite =", width, "Höhe =", height))
-  })
-  
-  #------------------------------------------------------------------------------
-  
-  scatterTitle <- reactive({
-    if (input$pickArt == "df_ist"){
-      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_soll"){
-      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_diff"){
-      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
-    }
-    return(titel)
-  })
-  
-  ## visualize data
+  ## visualize the main plot
   output$plot1 <- renderPlot({
     df_scatter <- scatterData()
     if (nrow(df_scatter) == 0) {
@@ -336,15 +322,17 @@ shinyServer(function(input, output, session) {
     session$clientData$output_plot1_width
   }
   )
-  observe({
-    invalidateLater(1000, session) # Überprüft alle 1000 Millisekunden
-    session$clientData$output_plot1_width
-  })
+  #------------------------------------------------------------------------------
   
-  observe({
-    width <- input$windowSize$width
-    height <- input$windowSize$height
-    session$clientData$output_plot1_width
+  scatterTitle <- reactive({
+    if (input$pickArt == "df_ist"){
+      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "df_soll"){
+      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "df_diff"){
+      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
+    }
+    return(titel)
   })
   
   
