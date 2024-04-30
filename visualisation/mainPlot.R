@@ -1,16 +1,25 @@
 
 
 renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected, refreshMainPlot){
-  colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red")
+  colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red", "User - Anomalie - Aktuell" = "#197084")
   
   mainPlot <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
+    
+    # ai anomaly in the background, to ensure it doesnt cover nearby points
     geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "AI - Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) + # AI selected
-    geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4, alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2)) + # regular
-    geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "User - Anomalie"), alpha = ifelse(selected()$Ursprung == "TRUE", 1, 0), size = 4) + # User Anomalies
+    
+    # normal cases
+    geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4, alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2)) +
+    
+    # complex conditions for colouring the user anomalies based on its year
+    geom_point(data = selected(), aes(x = value, y = Gesamttitel, 
+                                      colour = ifelse(selected()$Ursprung == "TRUE" & selected()$year == as.character(last_year), "User - Anomalie - Aktuell", "User - Anomalie")), fill = "red", shape = 21, size = 5, 
+                                      stroke = ifelse(selected()$Ursprung == "TRUE" & selected()$year == as.character(last_year), 1.0, 0.1), 
+                                      alpha = ifelse(selected()$Ursprung == "TRUE", 1, 0), size = 4)+
+    
     
     labs(title = scatterTitle(),
          subtitle = "Einzelplan 14",
-         #caption = "Daten des Landes Schleswig-Holstein") +
          caption = ifelse(refreshMainPlot(), "Daten des Landes Schleswig-Holstein (aktuelles Jahr)", "Daten des Landes Schleswig-Holstein (aktuelles Jahr) ")) + # useless but forces a refresh
     theme(plot.title = element_text(family = plot_font_family, size = headline_font_size, color = "gray16"),
           plot.subtitle = element_text(family = plot_font_family, size = normal_text_font_size ),

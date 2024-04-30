@@ -55,7 +55,6 @@ createScatterData <- function(input, reac_data, anomalies) {
     df_scatter$anomaly <- mapply(function(title, year) {
       any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)
     }, df_scatter$Gesamttitel, df_scatter$year)
-    
     return(df_scatter)
   })
 }
