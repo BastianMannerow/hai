@@ -1,15 +1,15 @@
 
 # Counts the missing datapoints
-pointsOutsideRange <- function(reac_data, selected_title, scatterData) {
-  df_scatter <- alternative_scatterData(reac_data, selected_title)
+pointsOutsideRange <- function(pickedCategoryDataframe, selected_title, scatterData) {
+  df_scatter <- alternative_scatterData(pickedCategoryDataframe, selected_title)
   filtered_out_count <- nrow(df_scatter) - nrow(scatterData())
   return(filtered_out_count)
 }
 
 # Helps for counting the data
-alternative_scatterData <- function(reac_data, selected_title) {
-  numeric_cols <- names(reac_data())[!grepl("Anomalie", names(reac_data())) & sapply(reac_data(), is.numeric)]
-  df_scatter <- reshape2::melt(reac_data(), id.vars = "Gesamttitel", measure.vars = numeric_cols)
+alternative_scatterData <- function(pickedCategoryDataframe, selected_title) {
+  numeric_cols <- names(pickedCategoryDataframe())[!grepl("Anomalie", names(pickedCategoryDataframe())) & sapply(pickedCategoryDataframe(), is.numeric)]
+  df_scatter <- reshape2::melt(pickedCategoryDataframe(), id.vars = "Gesamttitel", measure.vars = numeric_cols)
   colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
   df_scatter$year <- as.numeric(as.character(df_scatter$year))
   
@@ -23,10 +23,10 @@ if (interactive()) {
 }
 
 # the entry point for the warning
-generateOutOfRangeMessage <- function(reac_data, input, pointsOutsideRange, scatterData) {
+generateOutOfRangeMessage <- function(pickedCategoryDataframe, input, scatterData) {
   renderUI({
-    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
-      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
+    if (pointsOutsideRange(pickedCategoryDataframe, input$pickTitel, scatterData) > 0) {
+      span(style = "color: red;", paste(pointsOutsideRange(pickedCategoryDataframe, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
     } else {
       return(NULL)
     }

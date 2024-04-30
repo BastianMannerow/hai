@@ -110,7 +110,7 @@ shinyServer(function(input, output, session) {
   updateTitleChoices(input, session, df_zweck, current_titel)
   
   # Warns about missing datapoints
-  output$outOfRangeMessage <- generateOutOfRangeMessage(pickedCategoryDataframe, input, pointsOutsideRange, scatterData)
+  output$outOfRangeMessage <- generateOutOfRangeMessage(pickedCategoryDataframe, input, scatterData)
   
   # Overrides the time and value slider for a dynamic effect
   dynamicSlider <- updateTimeSlider(session, sliderDataframe)

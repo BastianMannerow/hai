@@ -53,14 +53,5 @@ setupDataTableInteractions <- function(rv, session, input) {
     rv$x[i, j] <- v
   })
   
-  observeEvent(input$save_to_global, {
-    assign('df_ausreißer', unique(rv$x), envir = .GlobalEnv)
-    saveRDS(df_ausreißer, file = "resultData.rds")
-    showModal(modalDialog(
-      title = "Vielen Dank!",
-      "Die Tabelle wurde gespeichert."
-    ))
-  })
-  
   session$sendCustomMessage(type = 'bind-remove', message = list(selector = '#remove'))
 }
