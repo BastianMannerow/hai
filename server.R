@@ -17,8 +17,9 @@ library(patchwork)
 library(shinyjs)
 
 # own methods
-source("plots/detailedView.R")
-source("plots/mainPlot.R")
+source("visualisation/detailedView.R")
+source("visualisation/mainPlot.R")
+source("visualisation/anomalyTable.R")
 source("utilities/dynamicButtons.R")
 source("utilities/slider.R")
 source("utilities/pointsNotVisibleWarning.R")
@@ -228,7 +229,7 @@ shinyServer(function(input, output, session) {
     observeButtonPress(input, df_scatter, selectedTitle)
   })
   
-  #------------------------------------------------------------------------------ Plot Output
+  #------------------------------------------------------------------------------ Visualisation
   ## visualize the main plot
   output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
   # Hover Info
@@ -240,88 +241,14 @@ shinyServer(function(input, output, session) {
                        plot_font_family, normal_text_font_size, mini_headline_font_size, output)
   })
   
-  #------------------------------------------------------------------------------ Tabelle Ausreißer Identifizieren
-  ## render table
-  output$mydata <- renderDT({
-    data = isolate(rv$x) # isolate inhibits dependency between data and render-function, datatable is only updated, not rendered, when data changes
-    datatable(data,
-              escape = FALSE,
-              extensions = "Buttons", 
-              editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 4))),
-              class = 'compact stripe', 
-              caption = "Hier erscheinen Ihre ausgewählten Datenpunkte. Ergänzen Sie im Kommentar, warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
-              rownames = FALSE, 
-              options = list(
-                paging = FALSE,
-                searching = FALSE,
-                fixedColumns = FALSE,
-                autoWidth = FALSE,
-                dom = 'Bfrtip',
-                info = FALSE,
-                buttons = list(list(
-                  extend = 'collection',
-                  buttons = c('csv', 'excel', 'pdf'),
-                  text = 'Download Ausreißer-Liste'
-                )),
-                ordering = TRUE,  # Aktiviert die Sortierung für die Tabelle
-                columnDefs = list(
-                  list(className = 'dt-center', targets = "_all"),
-                  list(orderable = TRUE, targets = c(0, 1, 2, 3, 4)),  # enables sorting for all columns
-                  list(orderable = FALSE, targets = 5)  # Deactivates the commentar function
-                )
-              ))
-  })
-  
-  #------------------------------------------------------------------------------ Tabelle Aktionen
+  ## Anomaly Table
+  output$mydata <- generateAnomalyTable(rv)
+  setupDataTableInteractions(rv, session, input)
   callback <- c(
     '$("#remove").on("click", function(){',
     '  table.rows(".selected").remove().draw();',
     '});'
   )
-  
-  ## Helpful blog articles that show the use of reactive datatables, proxy and replaceData
-  ## https://www.travishinkelman.com/dt-datatable-crud/
-  ## https://thatdatatho.com/r-shiny-data-table-proxy-replace-data/
-  
-  ## create a proxy object for our datatable-object, this allows us to manipulate the datatable
-  proxy <- dataTableProxy('mydata')
-  # set an observer to reactive values inside the observer-function (our reactive value is rv$x)
-  # every time rv$x is changed, the observer calls for the replaceData-function and updates the proxy-object (i.e. our datatable)
-  observe({
-    replaceData(proxy, unique(rv$x), resetPaging = FALSE, rownames = FALSE) 
-    # resetPaging and rownames are needed to set to FALSE, because in our renderDT-function we set them to FALSE, 
-    # otherwise no matching table found
-  })
-  
-  ## delete rows in data table
-  observeEvent(input[["remove"]], {
-    req(input[["mydata_rows_selected"]])
-    indices <- input[["mydata_rows_selected"]]
-    rv$x <- rv$x %>% filter(!row_number() %in% indices)
-    session$clientData$output_plot1_width
-  })
-  
-  ## save comments in datatable
-  observeEvent(input$mydata_cell_edit, {
-    info = input$mydata_cell_edit
-    i = info$row
-    j = info$col + 1 # column index offset of 1 because ID column (rownames) is hidden
-    v = info$value
-    rv$x[i,j] = v
-    session$clientData$output_plot1_width
-  })
-  
-  ## save table to global variable
-  observeEvent(input$save_to_global, {
-    assign('df_ausreißer', unique(rv$x), envir = .GlobalEnv)
-    saveRDS(df_ausreißer, file = "resultData.rds")
-    # Pop-Up Dialog after table was saved, more information here: https://shiny.rstudio.com/reference/shiny/latest/modaldialog
-    showModal(modalDialog(
-      title = "Vielen Dank!",
-      "Die Tabelle wurde gespeichert."
-    ))
-    session$clientData$output_plot1_width
-  })
   #------------------------------------------------------------------------------ Adapter between MainPlot and Tabelle
   ## anomaly toggling to distinguish between user and ai
   toggleAnomaly <- function(title, year) {
