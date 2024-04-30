@@ -1,8 +1,7 @@
 
 
-renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected){
+renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected, refreshMainPlot){
   colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red")
-  
   
   mainPlot <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
     geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "AI - Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) + # AI selected
@@ -11,7 +10,8 @@ renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_fon
     
     labs(title = scatterTitle(),
          subtitle = "Einzelplan 14",
-         caption = "Daten des Landes Schleswig-Holstein") +
+         #caption = "Daten des Landes Schleswig-Holstein") +
+         caption = ifelse(refreshMainPlot(), "Daten des Landes Schleswig-Holstein (aktuelles Jahr)", "Daten des Landes Schleswig-Holstein (aktuelles Jahr) ")) + # useless but forces a refresh
     theme(plot.title = element_text(family = plot_font_family, size = headline_font_size, color = "gray16"),
           plot.subtitle = element_text(family = plot_font_family, size = normal_text_font_size ),
           panel.background = element_rect(fill = "grey98"),
@@ -28,7 +28,7 @@ renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_fon
   return(mainPlot)
 }
 
-generateMainPlot <- function(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size) {
+generateMainPlot <- function(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size, refreshMainPlot) {
   renderPlot({
     df_scatter <- scatterData()
     if (nrow(df_scatter) == 0) {
@@ -49,7 +49,7 @@ generateMainPlot <- function(scatterData, input, session, getPlotHeight, selecte
     })
     last_year <- max(last_years, na.rm = TRUE)
     
-    mainPlot = renderMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected)
+    mainPlot = renderMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected, refreshMainPlot)
     
     selected_range <- sort(as.numeric(input$pickWertebereich))
     mainPlot <- mainPlot + xlim(selected_range[1], selected_range[2])

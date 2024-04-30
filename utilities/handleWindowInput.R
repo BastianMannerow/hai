@@ -1,15 +1,16 @@
-
-sourceRefreshPlot <- function(session) {
+observe_external <- function(session, lastDimensions, refreshMainPlot) {
   observe({
-    invalidateLater(1000, session)
-    session$clientData$output_plot1_width
-  })
-}
-
-sourceHandleWindowSize <- function(input, session) {
-  observe({
-    width <- input$windowSize$width
-    height <- input$windowSize$height
-    session$clientData$output_plot1_width
+    width <- session$clientData$output_plot1_width
+    height <- session$clientData$output_plot1_height
+    
+    if (!is.null(width) && !is.null(height)) {
+      if (width != lastDimensions$width || height != lastDimensions$height) {
+        lastDimensions$width <- width
+        lastDimensions$height <- height
+        
+        refreshMainPlot(!refreshMainPlot())
+        print(paste("Refresh toggled to:", refreshMainPlot()))
+      }
+    }
   })
 }

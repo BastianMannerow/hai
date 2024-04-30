@@ -32,8 +32,7 @@ font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
-#-------------------------------------------------------------------------------
-# Global Changes
+#------------------------------------------------------------------------------- Options
 plot_font_family <- "Roboto"
 legend_size = 5
 mini_headline_font_size <- 16
@@ -41,7 +40,8 @@ mini_headline_font_size <- 16
 headline_font_size <- paste0(mini_headline_font_size * 1.5)
 normal_text_font_size <- paste0(mini_headline_font_size * 0.8)
 axis_font_size <- 5
-#-------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------- Import data
 
 ### get data
 df_ist <- importDFIst()
@@ -55,7 +55,12 @@ df_anomaly <- importDFAnomaly()
 shinyServer(function(input, output, session) {
   # Handling of the screen size and triggers refreshing of the mainPlot
   sourceRefreshPlot(session)
-  sourceHandleWindowSize
+  
+  # Varibales which force the mainPlot to refresh
+  refreshMainPlot <- reactiveVal(TRUE)
+  lastDimensions <- reactiveValues(width = 1, height = 1)
+  
+  observe_external(session, lastDimensions, refreshMainPlot)
   
   # ---------------------------------------------------------------------------- Reactive Data
   ## Make a point unclicked
@@ -138,7 +143,7 @@ shinyServer(function(input, output, session) {
   
   #------------------------------------------------------------------------------ Visualisation
   ## visualize the main plot
-  output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
+  output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size, refreshMainPlot)
   # Hover Info
   output$hover_info <- generateMainPlotHoverInfo(input, scatterData, nearPoints)
   
