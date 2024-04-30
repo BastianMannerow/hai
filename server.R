@@ -167,30 +167,6 @@ shinyServer(function(input, output, session) {
   })
   
   
-  # Define reactiveVal for selected title
-  selectedTitle <- reactiveVal()
-  
-  
-  # Generate the detailed view
-  observe({
-    plot_data <- filterDataForDetailedView(df_zweck, df_ist, df_soll, rv, selectedTitle)
-    tryCatch({
-      # Zeitreihenplot
-      timeSeriesPlot <- generateTimeSeriesPlot(plot_data$soll_values, plot_data$ist_values, plot_data$soll_anomalies, plot_data$ist_anomalies, plot_font_family, normal_text_font_size)
-      
-      # Differenzplot
-      differencePlot <- generateDifferencePlot(plot_data$combined_df, plot_data$diff_anomalies, plot_font_family, normal_text_font_size)
-      
-      # Plots kombinieren
-      title_with_breaks <- insert_breaks_every_n_chars(paste(plot_data$title, " - ", plot_data$purpose))
-      combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) +
-        theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
-      
-      output$combinedPlot <- renderPlot({ combinedPlot })
-    }, error = function(e) {
-      cat("Es gab einen Fehler bei der Erstellung der Detailansicht: ", e$message, "\n")
-    })
-  })
   
   # Receive relevant data
   scatterDataframe <- reactive({
@@ -234,6 +210,39 @@ shinyServer(function(input, output, session) {
   output$dynamicButtons <- renderUI({
     df_scatter <- scatterData()
     generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
+  })
+  
+  # Define reactiveVal for selected title
+  selectedTitle <- reactiveVal()
+  
+  # Generate the detailed view
+  observe({
+    df_scatter <- scatterData() 
+    titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
+    sortedTitelListe <- rev(levels(titelListe))
+    lapply(sortedTitelListe, function(titel) {
+      btn_id <- paste0("button_", gsub(" ", "_", titel))
+      observeEvent(input[[btn_id]], {
+        selectedTitle(titel)
+      })})
+    
+    plot_data <- filterDataForDetailedView(df_zweck, df_ist, df_soll, rv, selectedTitle)
+    tryCatch({
+      # Zeitreihenplot
+      timeSeriesPlot <- generateTimeSeriesPlot(plot_data$soll_values, plot_data$ist_values, plot_data$soll_anomalies, plot_data$ist_anomalies, plot_font_family, normal_text_font_size)
+      
+      # Differenzplot
+      differencePlot <- generateDifferencePlot(plot_data$combined_df, plot_data$diff_anomalies, plot_font_family, normal_text_font_size)
+      
+      # Plots kombinieren
+      title_with_breaks <- insert_breaks_every_n_chars(paste(plot_data$title, " - ", plot_data$purpose))
+      combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) +
+        theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
+      
+      output$combinedPlot <- renderPlot({ combinedPlot })
+    }, error = function(e) {
+      cat("Es gab einen Fehler bei der Erstellung der Detailansicht: ", e$message, "\n")
+    })
   })
   
   ## visualize the main plot
