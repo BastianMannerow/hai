@@ -22,6 +22,7 @@ source("plots/mainPlot.R")
 source("utilities/dynamicButtons.R")
 source("utilities/slider.R")
 source("utilities/pointsNotVisibleWarning.R")
+source("utilities/importData.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -40,35 +41,15 @@ axis_font_size <- 5
 #-------------------------------------------------------------------------------
 
 ### get data
-df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
-df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
-df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
-df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
-df_zweck <- read.table("./Data/hh_sh_ep14_zweck.csv", sep = ",", header = TRUE, 
-                       fileEncoding = "UTF-8", 
-                       colClasses = c(Kapitel="character", Gesamttitel="character"))
+df_ist <- importDFIst()
+df_soll <- importDFSoll()
+df_diff <- importDFDiff()
+df_kapitel <- importDFKapitel()
+df_zweck <- importDFZweck()
 
-# Should be moved into an own method, but here we are...
-#df_ist <- df_ist %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_soll <- df_soll %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_diff <- df_diff %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-
-# Adding the column Anomalies for each year to be able to distinguish between AI and Human anomaly
-df_ist <- df_ist %>%
-  mutate(across(matches("^[0-9]"), ~., .names = "{.col}_Anomalie")) %>%
-  mutate(across(ends_with("Anomalie"), ~ 0))
-df_soll <- df_soll %>%
-  mutate(across(matches("^[0-9]"), ~., .names = "{.col}_Anomalie")) %>%
-  mutate(across(ends_with("Anomalie"), ~ 0))
-df_diff <- df_diff %>%
-  mutate(across(matches("^[0-9]"), ~., .names = "{.col}_Anomalie")) %>%
-  mutate(across(ends_with("Anomalie"), ~ 0))
 
 # a persistent anomaly dataframe to distinguish between AI and User
 anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = numeric(), Anomalie = logical()))
-
-
 
 ### set up server
 shinyServer(function(input, output, session) {
@@ -137,9 +118,7 @@ shinyServer(function(input, output, session) {
     return(df_scatter)
   })
   
-  
-  
-  
+  # Warns about missing datapoints
   output$outOfRangeMessage <- renderUI({
     if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
       span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
