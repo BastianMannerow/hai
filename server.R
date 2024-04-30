@@ -138,7 +138,7 @@ shinyServer(function(input, output, session) {
     df_scatter <- scatterData()
     observeButtonPress(input, df_scatter, selectedTitle)
   })
-  # Adapter between MainPlot and Anomaly Tabelle
+  # Adapter between MainPlot and Anomaly Table
   setupAnomalyInteractions(input, output, session, anomaly_table, curr_art, scatterData, last_click, anomalies)
   
   #------------------------------------------------------------------------------ Visualisation
@@ -148,7 +148,7 @@ shinyServer(function(input, output, session) {
   output$hover_info <- generateMainPlotHoverInfo(input, scatterData, nearPoints)
   
   # Generate the detailed view
-  observeEvent(selectedTitle(), {
+  observeEvent(c(selectedTitle(), anomaly_table$x), {
     generateDetailPlot(df_scatter, df_zweck, df_ist, df_soll, anomaly_table, selectedTitle,
                        plot_font_family, normal_text_font_size, mini_headline_font_size, output)
   })

@@ -9,7 +9,6 @@ observe_external <- function(session, lastDimensions, refreshMainPlot) {
         lastDimensions$height <- height
         
         refreshMainPlot(!refreshMainPlot())
-        print(paste("Refresh toggled to:", refreshMainPlot()))
       }
     }
   })
