@@ -229,54 +229,15 @@ shinyServer(function(input, output, session) {
   })
   
   #------------------------------------------------------------------------------ Plot Output
+  ## visualize the main plot
+  output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
+  # Hover Info
+  output$hover_info <- generateMainPlotHoverInfo(input, scatterData, nearPoints)
+  
   # Generate the detailed view
   observeEvent(selectedTitle(), {
     generateDetailPlot(df_scatter, df_zweck, df_ist, df_soll, rv, selectedTitle,
                        plot_font_family, normal_text_font_size, mini_headline_font_size, output)
-  })
-  
-  ## visualize the main plot
-  output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
-  
-  #------------------------------------------------------------------------------ Hovering
-  ## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
-  # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
-  output$hover_info <- renderUI({
-    hover <- input$plot_hover 
-    if (nrow(scatterData()) == 0) return(NULL)
-    point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
-    if (nrow(point) == 0) return(NULL)
-    
-    # calculate horizontal and vertical point position inside the image as percent of total dimensions
-    h_pct <- (hover$x - hover$domain$left) / (hover$domain$right - hover$domain$left)
-    v_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
-    
-    # create style property for tooltip
-    # background color is set so tooltip is a bit transparent
-    # z-index is set so we are sure the tooltip will be on top
-    # pixel coordinates are dependency of the horizontal and vertical position of the cursor, reaching
-    # the right or bottom edge of plotting changes the position of the tooltip panel
-    if (h_pct < 0.8 && v_pct < 0.8){
-      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                      "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y +2, "px;")
-    } else if (h_pct >=0.8 && v_pct <0.8){ # cursor close to right edge
-      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                      "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y +2, "px;")
-    } else if (h_pct < 0.8 && v_pct >=0.8){ # cursor close to bottom edge
-      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                      "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y - 150, "px;")
-    } else {
-      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                      "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y - 150, "px;")
-    }
-    
-    # actual tooltip created as wellPanel
-    wellPanel(
-      style = style,
-      p(HTML(paste0("<b> Titel: </b>", point$Gesamttitel, "<br/>",
-                    "<b> Jahr: </b>", point$year, "<br/>",
-                    "<b> Wert: </b>", point$value, "<br/>")))
-    )
   })
   
   #------------------------------------------------------------------------------ Tabelle Ausreißer Identifizieren

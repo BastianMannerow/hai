@@ -64,3 +64,38 @@ generateMainPlot <- function(scatterData, input, session, getPlotHeight, selecte
   }
   )
 }
+
+## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
+# new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
+generateMainPlotHoverInfo <- function(input, scatterData, nearPoints) {
+  renderUI({
+    hover <- input$plot_hover 
+    if (nrow(scatterData()) == 0) return(NULL)
+    point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+    if (nrow(point) == 0) return(NULL)
+    
+    h_pct <- (hover$x - hover$domain$left) / (hover$domain$right - hover$domain$left)
+    v_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
+    
+    if (h_pct < 0.8 && v_pct < 0.8){
+      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                      "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y +2, "px;")
+    } else if (h_pct >= 0.8 && v_pct < 0.8){
+      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                      "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y +2, "px;")
+    } else if (h_pct < 0.8 && v_pct >= 0.8){
+      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                      "left:", hover$coords_css$x + 2, "px; top:", hover$coords_css$y - 150, "px;")
+    } else {
+      style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                      "left:", hover$coords_css$x - 300, "px; top:", hover$coords_css$y - 150, "px;")
+    }
+    
+    wellPanel(
+      style = style,
+      p(HTML(paste0("<b> Titel: </b>", point$Gesamttitel, "<br/>",
+                    "<b> Jahr: </b>", point$year, "<br/>",
+                    "<b> Wert: </b>", point$value, "<br/>")))
+    )
+  })
+}
