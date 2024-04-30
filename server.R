@@ -21,6 +21,7 @@ source("plots/detailedView.R")
 source("plots/mainPlot.R")
 source("utilities/dynamicButtons.R")
 source("utilities/slider.R")
+source("utilities/pointsNotVisibleWarning.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -139,34 +140,9 @@ shinyServer(function(input, output, session) {
   
   
   
-  ## filter data for scatter plot
-  alternative_scatterData <- reactive({
-    selected_title <- input$pickTitel
-    
-    # ignore Anomaly
-    numeric_cols <- names(reac_data())[!grepl("Anomalie", names(reac_data())) & sapply(reac_data(), is.numeric)]
-    df_scatter <- melt(reac_data(), id.vars = "Gesamttitel", measure.vars = numeric_cols)
-    colnames(df_scatter)[which(names(df_scatter) == "variable")] <- "year"
-    df_scatter$year <- as.numeric(as.character(df_scatter$year))
-    
-    df_scatter <- df_scatter %>%
-      filter(Gesamttitel %in% selected_title) %>%
-      drop_na(value)  # Remove NA
-    
-    return(df_scatter)
-  })
-  
-  
-  # Counts data points, which are not visible
-  pointsOutsideRange <- reactive({
-    filtered_out_count <- nrow(alternative_scatterData()) - nrow(scatterData())
-    filtered_out_count
-  })
-  
-  # Implements a message to warn the user about non-visible points
   output$outOfRangeMessage <- renderUI({
-    if (pointsOutsideRange() > 0) {
-      span(style = "color: red;", paste(pointsOutsideRange(), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
+    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
+      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
     } else {
       return(NULL)
     }
