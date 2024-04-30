@@ -60,6 +60,56 @@ shinyServer(function(input, output, session) {
   sourceHandleWindowSize
   
   # ---------------------------------------------------------------------------- Reactive Data
+  # Define reactiveVal for selected title
+  selectedTitle <- reactiveVal()
+  
+  # initialize a tibble with anomalies from AI output (artifical data, not real)
+  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
+  
+  # add the icons
+  df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                                 paste(fa("user"), "Nutzer"),
+                                                 if_else(startsWith(Ursprung, "AI"),
+                                                         paste(fa("microchip"), "KI System"),
+                                                         Ursprung)))
+  ## df to save anomaly points (from the table) for coloring in the plot
+  selected <- reactive({
+    ## get data from rv$x to the same structure like in df and 
+    # filter curr_art (Betragsart) and input$pickTitel
+    if (curr_art() == "df_ist"){
+      selected_points <- rv$x %>% filter(Art == "Ist") %>%
+        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
+    } else if (curr_art() == "df_soll"){
+      selected_points <- rv$x %>% filter(Art == "Soll") %>%
+        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
+    } else{
+      selected_points <- rv$x %>% filter(Art == "Diff") %>%
+        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
+    }
+    if (!is.null(input$pickTitel)){
+      selected_points <- filter(selected_points, Gesamttitel %in% input$pickTitel)
+    }
+    
+    # Update Ursprung column based on presence of "Nutzer"
+    selected_points <- selected_points %>%
+      mutate(Ursprung = str_detect(Ursprung, "Nutzer"))
+    
+    return(selected_points)
+  })
+  
+  # save the tibble as reactive value
+  rv <- reactiveValues(x = df_new)
+  
+  scatterTitle <- reactive({
+    if (input$pickArt == "df_ist"){
+      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "df_soll"){
+      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
+    } else if (input$pickArt == "df_diff"){
+      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
+    }
+    return(titel)
+  })
   
   ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
   # reaktiver Platzhalter für aktuelles df
@@ -149,31 +199,19 @@ shinyServer(function(input, output, session) {
   
   #------------------------------------------------------------------------------ Functionality
   # Warns about missing datapoints
-  output$outOfRangeMessage <- renderUI({
-    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
-      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
-    } else {
-      return(NULL)
-    }
-  })
+  output$outOfRangeMessage <- generateOutOfRangeMessage(reac_data, input, pointsOutsideRange, scatterData)
   
-  # Overrides the time slider for a dynamic effect
+  # Overrides the time and value slider for a dynamic effect
   dynamicSlider <- updateTimeSlider(session, scatterDataframe)
-  
-  # Overrides the value slider for a dynamic effect
   updateValueSlider(session, scatterDataframe)
   
-  # Calculates the main plots height
-  
-  # Count the amount of buttons, to scale the plot in ui.R
+  # Calculates the button and plot height and width
   getbutton_width <- reactive({
     getButtonWidth(session)
   })
-  
   getbutton_height <- reactive({
     calculateButtonHeight(normal_text_font_size)
   })
-  
   getPlotHeight <- reactive({
     calculatePlotHeight (input, scatterData, session, getbutton_height)
   })
@@ -184,15 +222,13 @@ shinyServer(function(input, output, session) {
     generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
   })
   
-  # Define reactiveVal for selected title
-  selectedTitle <- reactiveVal()
-  
   # Checks if a button was pressed
   observe({
     df_scatter <- scatterData()
     observeButtonPress(input, df_scatter, selectedTitle)
   })
   
+  #------------------------------------------------------------------------------ Plot Output
   # Generate the detailed view
   observeEvent(selectedTitle(), {
     generateDetailPlot(df_scatter, df_zweck, df_ist, df_soll, rv, selectedTitle,
@@ -201,20 +237,8 @@ shinyServer(function(input, output, session) {
   
   ## visualize the main plot
   output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
-  #------------------------------------------------------------------------------
   
-  scatterTitle <- reactive({
-    if (input$pickArt == "df_ist"){
-      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_soll"){
-      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_diff"){
-      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
-    }
-    return(titel)
-  })
-  
-  
+  #------------------------------------------------------------------------------ Hovering
   ## visualize hover info and tooltip, copied from: https://gitlab.com/-/snippets/16220
   # new information for cursor position was added to plot_hover in 2018: https://github.com/rstudio/shiny/pull/2183
   output$hover_info <- renderUI({
@@ -255,18 +279,7 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  # initialize a tibble with anomalies from AI output (artifical data, not real)
-  df_new <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
-  
-  # add the icons
-  df_new <- df_new %>% mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                                 paste(fa("user"), "Nutzer"),
-                                                 if_else(startsWith(Ursprung, "AI"),
-                                                         paste(fa("microchip"), "KI System"),
-                                                         Ursprung)))
-  # save the tibble as reactive value
-  rv <- reactiveValues(x = df_new)
-  
+  #------------------------------------------------------------------------------ Tabelle Ausreißer Identifizieren
   ## render table
   output$mydata <- renderDT({
     data = isolate(rv$x) # isolate inhibits dependency between data and render-function, datatable is only updated, not rendered, when data changes
@@ -298,6 +311,7 @@ shinyServer(function(input, output, session) {
               ))
   })
   
+  #------------------------------------------------------------------------------ Tabelle Aktionen
   callback <- c(
     '$("#remove").on("click", function(){',
     '  table.rows(".selected").remove().draw();',
@@ -318,31 +332,36 @@ shinyServer(function(input, output, session) {
     # otherwise no matching table found
   })
   
-  ## df to save anomaly points (from the table) for coloring in the plot
-  selected <- reactive({
-    ## get data from rv$x to the same structure like in df and 
-    # filter curr_art (Betragsart) and input$pickTitel
-    if (curr_art() == "df_ist"){
-      selected_points <- rv$x %>% filter(Art == "Ist") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    } else if (curr_art() == "df_soll"){
-      selected_points <- rv$x %>% filter(Art == "Soll") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    } else{
-      selected_points <- rv$x %>% filter(Art == "Diff") %>%
-        select(Gesamttitel=Titel, year=Jahr, value=Wert, Ursprung)
-    }
-    if (!is.null(input$pickTitel)){
-      selected_points <- filter(selected_points, Gesamttitel %in% input$pickTitel)
-    }
-    
-    # Update Ursprung column based on presence of "Nutzer"
-    selected_points <- selected_points %>%
-      mutate(Ursprung = str_detect(Ursprung, "Nutzer"))
-    
-    return(selected_points)
+  ## delete rows in data table
+  observeEvent(input[["remove"]], {
+    req(input[["mydata_rows_selected"]])
+    indices <- input[["mydata_rows_selected"]]
+    rv$x <- rv$x %>% filter(!row_number() %in% indices)
+    session$clientData$output_plot1_width
   })
   
+  ## save comments in datatable
+  observeEvent(input$mydata_cell_edit, {
+    info = input$mydata_cell_edit
+    i = info$row
+    j = info$col + 1 # column index offset of 1 because ID column (rownames) is hidden
+    v = info$value
+    rv$x[i,j] = v
+    session$clientData$output_plot1_width
+  })
+  
+  ## save table to global variable
+  observeEvent(input$save_to_global, {
+    assign('df_ausreißer', unique(rv$x), envir = .GlobalEnv)
+    saveRDS(df_ausreißer, file = "resultData.rds")
+    # Pop-Up Dialog after table was saved, more information here: https://shiny.rstudio.com/reference/shiny/latest/modaldialog
+    showModal(modalDialog(
+      title = "Vielen Dank!",
+      "Die Tabelle wurde gespeichert."
+    ))
+    session$clientData$output_plot1_width
+  })
+  #------------------------------------------------------------------------------ Adapter between MainPlot and Tabelle
   ## anomaly toggling to distinguish between user and ai
   toggleAnomaly <- function(title, year) {
     if(any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)) {
@@ -389,36 +408,6 @@ shinyServer(function(input, output, session) {
   
   ## Make a point unclicked
   last_click <- reactiveVal(NULL)
-  
-  ## delete rows in data table
-  observeEvent(input[["remove"]], {
-    req(input[["mydata_rows_selected"]])
-    indices <- input[["mydata_rows_selected"]]
-    rv$x <- rv$x %>% filter(!row_number() %in% indices)
-    session$clientData$output_plot1_width
-  })
-  
-  ## save comments in datatable
-  observeEvent(input$mydata_cell_edit, {
-    info = input$mydata_cell_edit
-    i = info$row
-    j = info$col + 1 # column index offset of 1 because ID column (rownames) is hidden
-    v = info$value
-    rv$x[i,j] = v
-    session$clientData$output_plot1_width
-  })
-  
-  ## save table to global variable
-  observeEvent(input$save_to_global, {
-    assign('df_ausreißer', unique(rv$x), envir = .GlobalEnv)
-    saveRDS(df_ausreißer, file = "resultData.rds")
-    # Pop-Up Dialog after table was saved, more information here: https://shiny.rstudio.com/reference/shiny/latest/modaldialog
-    showModal(modalDialog(
-      title = "Vielen Dank!",
-      "Die Tabelle wurde gespeichert."
-    ))
-    session$clientData$output_plot1_width
-  })
 })
 
 

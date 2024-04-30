@@ -21,3 +21,14 @@ alternative_scatterData <- function(reac_data, selected_title) {
 if (interactive()) {
   print("pointsNotVisibleWarning geladen")
 }
+
+# the entry point for the warning
+generateOutOfRangeMessage <- function(reac_data, input, pointsOutsideRange, scatterData) {
+  renderUI({
+    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
+      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
+    } else {
+      return(NULL)
+    }
+  })
+}
