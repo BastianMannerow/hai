@@ -72,6 +72,33 @@ shinyServer(function(input, output, session) {
     curr_art(input$pickArt)
   })
   
+  # the min and max year based on slider, which are used for the mainPlot title
+  selected_years <- reactive({
+    as.numeric(input$pickZeitraum)
+  })
+  
+  minYear <- reactive({
+    if (is.null(selected_years())) {
+      return(NULL)
+    }
+    min(selected_years())
+  })
+  
+  maxYear <- reactive({
+    if (is.null(selected_years())) {
+      return(NULL)
+    }
+    max(selected_years())
+  })
+  
+  # Function to generate the title for mainPlot based on user selection
+  scatterTitle <- reactive({
+    if (is.null(minYear()) || is.null(maxYear())) {
+      return("Zeitraum wird initialisiert.")
+    }
+    createScatterTitle(input, minYear(), maxYear())
+  })
+  
   # The selected title, needed for dynamic buttons and detail view
   selectedTitle <- reactiveVal()
   
@@ -83,9 +110,6 @@ shinyServer(function(input, output, session) {
   
   # df to save anomaly points (from the table) for coloring in the plot
   selected <- createSelectedPoints(input, anomaly_table, curr_art)
-  
-  # Function to generate the title for mainPlot based on user selection
-  scatterTitle <- createScatterTitle(input)
   
   # data when a category is picked by the user (soll, ist, diff)
   pickedCategoryDataframe <- reactive({

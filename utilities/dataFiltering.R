@@ -87,15 +87,13 @@ createSelectedPoints <- function(input, rv, curr_art) {
 }
 
 ## Function to generate the title for scatter plot based on user selection
-createScatterTitle <- function(input) {
-  reactive({
-    if (input$pickArt == "df_ist") {
-      titel <- "Verteilung der Ist-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_soll") {
-      titel <- "Verteilung der Soll-Werte 2012 bis 2021 (in Euro)"
-    } else if (input$pickArt == "df_diff") {
-      titel <- "Verteilung der Differenz 'Soll-Ist' von 2012 bis 2021 (in Euro)"
-    }
-    return(titel)
-  })
+createScatterTitle <- function(input, minYear, maxYear) {
+  if (input$pickArt == "df_ist") {
+    titel <- paste("Verteilung der Ist-Werte", minYear, "bis", maxYear, "(in Euro)")
+  } else if (input$pickArt == "df_soll") {
+    titel <- paste("Verteilung der Soll-Werte", minYear, "bis", maxYear, "(in Euro)")
+  } else if (input$pickArt == "df_diff") {
+    titel <- paste("Verteilung der Differenz 'Soll-Ist' von", minYear, "bis", maxYear, "(in Euro)")
+  }
+  return(titel)
 }
