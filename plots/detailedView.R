@@ -117,3 +117,30 @@ filterDataForDetailedView <- function(df_zweck, df_ist, df_soll, rv, selectedTit
   list(title = title, purpose = purpose, ist_values = ist_values, soll_values = soll_values, combined_df = combined_df,
        soll_anomalies = soll_anomalies, ist_anomalies = ist_anomalies, diff_anomalies = diff_anomalies)
 }
+
+# the final generation of the detailed plot
+generateDetailPlot <- function(df_scatter, df_zweck, df_ist, df_soll, rv, selectedTitle,
+                               plot_font_family, normal_text_font_size, mini_headline_font_size, output) {
+  
+  plot_data <- filterDataForDetailedView(df_zweck, df_ist, df_soll, rv, selectedTitle)
+  
+  tryCatch({
+    # Zeitreihenplot
+    timeSeriesPlot <- generateTimeSeriesPlot(plot_data$soll_values, plot_data$ist_values, plot_data$soll_anomalies, plot_data$ist_anomalies, plot_font_family, normal_text_font_size)
+    
+    # Differenzplot
+    differencePlot <- generateDifferencePlot(plot_data$combined_df, plot_data$diff_anomalies, plot_font_family, normal_text_font_size)
+    
+    # Plots kombinieren
+    title_with_breaks <- insert_breaks_every_n_chars(paste(plot_data$title, " - ", plot_data$purpose))
+    combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) +
+      theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
+    
+    output$combinedPlot <- renderPlot({ combinedPlot })
+  }, error = function(e) {
+    cat("Es gab einen Fehler bei der Erstellung der Detailansicht: ", e$message, "\n")
+  })
+}
+
+
+
