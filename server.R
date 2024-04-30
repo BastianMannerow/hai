@@ -57,7 +57,9 @@ anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = 
 shinyServer(function(input, output, session) {
   # Handling of the screen size and triggers refreshing of the mainPlot
   sourceRefreshPlot(session)
-  sourceHandleWindowSize(input, session)
+  sourceHandleWindowSize
+  
+  # ---------------------------------------------------------------------------- Reactive Data
   
   ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
   # reaktiver Platzhalter für aktuelles df
@@ -76,15 +78,6 @@ shinyServer(function(input, output, session) {
     current_titel(input$pickTitel)
     session$clientData$output_plot1_width
   })
-  
-  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
-  observeEvent(input$pickKapitel, {
-    updatePickerInput(
-      session = session,
-      inputId = "pickTitel",
-      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
-      selected = current_titel())
-  }, ignoreInit = TRUE)
   
   ## filter data for scatter plot
   scatterData <- reactive({
@@ -126,18 +119,6 @@ shinyServer(function(input, output, session) {
     return(df_scatter)
   })
   
-  #------------------------------------------------------------------------------
-  # Warns about missing datapoints
-  output$outOfRangeMessage <- renderUI({
-    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
-      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
-    } else {
-      return(NULL)
-    }
-  })
-  
-  
-  
   # Receive relevant data
   scatterDataframe <- reactive({
     if (input$pickArt == "df_ist"){
@@ -154,13 +135,34 @@ shinyServer(function(input, output, session) {
     return(dataframe)
   })
   
+  # ---------------------------------------------------------------------------- Switch between dataframes in view
+  # when pickKapitel is changed, the choices for pickTitel are changed accordingly
+  observeEvent(input$pickKapitel, {
+    updatePickerInput(
+      session = session,
+      inputId = "pickTitel",
+      choices = filter(df_zweck, df_zweck$Kapitel %in% input$pickKapitel)["Gesamttitel"],
+      selected = current_titel())
+  }, ignoreInit = TRUE)
+  
+  
+  
+  #------------------------------------------------------------------------------ Functionality
+  # Warns about missing datapoints
+  output$outOfRangeMessage <- renderUI({
+    if (pointsOutsideRange(reac_data, input$pickTitel, scatterData) > 0) {
+      span(style = "color: red;", paste(pointsOutsideRange(reac_data, input$pickTitel, scatterData), "Datenpunkte liegen außerhalb des angezeigten Bereichs."))
+    } else {
+      return(NULL)
+    }
+  })
+  
   # Overrides the time slider for a dynamic effect
   dynamicSlider <- updateTimeSlider(session, scatterDataframe)
   
   # Overrides the value slider for a dynamic effect
   updateValueSlider(session, scatterDataframe)
   
-  #------------------------------------------------------------------------------
   # Calculates the main plots height
   
   # Count the amount of buttons, to scale the plot in ui.R
@@ -198,40 +200,7 @@ shinyServer(function(input, output, session) {
   })
   
   ## visualize the main plot
-  output$plot1 <- renderPlot({
-    df_scatter <- scatterData()
-    if (nrow(df_scatter) == 0) {
-      return(ggplot() +
-               annotate("text", x = 0.5, y = 0.5, size = 5, 
-                        label = "Keine Titel zur Ansicht ausgewählt.", vjust = 0.5, hjust = 0.5) +
-               theme_void() +
-               xlim(0, 1) + ylim(0, 1))
-    }
-    
-    df_scatter$year <- as.numeric(as.character(df_scatter$year))
-    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
-      if (all(is.na(df$value))) {
-        return(NA)
-      } else {
-        return(max(df$year, na.rm = TRUE))
-      }
-    })
-    last_year <- max(last_years, na.rm = TRUE)
-    
-    mainPlot = generateMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected)
-    
-    selected_range <- sort(as.numeric(input$pickWertebereich))
-    mainPlot <- mainPlot + xlim(selected_range[1], selected_range[2])
-    mainPlot
-  }, 
-  # dynamic scaling of the plot
-  height = function() {
-    getPlotHeight()
-  },
-  width = function() {
-    session$clientData$output_plot1_width
-  }
-  )
+  output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size)
   #------------------------------------------------------------------------------
   
   scatterTitle <- reactive({

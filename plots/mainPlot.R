@@ -1,6 +1,6 @@
 
 
-generateMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected){
+renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected){
   colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red")
   
   
@@ -26,4 +26,41 @@ generateMainPlot <- function(df_scatter, last_year, plot_font_family, headline_f
     guides(colour = guide_legend(title = "Legende"))
   
   return(mainPlot)
+}
+
+generateMainPlot <- function(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size) {
+  renderPlot({
+    df_scatter <- scatterData()
+    if (nrow(df_scatter) == 0) {
+      return(ggplot() +
+               annotate("text", x = 0.5, y = 0.5, size = 5, 
+                        label = "Keine Titel zur Ansicht ausgewählt.", vjust = 0.5, hjust = 0.5) +
+               theme_void() +
+               xlim(0, 1) + ylim(0, 1))
+    }
+    
+    df_scatter$year <- as.numeric(as.character(df_scatter$year))
+    last_years <- sapply(split(df_scatter, df_scatter$year), function(df) {
+      if (all(is.na(df$value))) {
+        return(NA)
+      } else {
+        return(max(df$year, na.rm = TRUE))
+      }
+    })
+    last_year <- max(last_years, na.rm = TRUE)
+    
+    mainPlot = renderMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected)
+    
+    selected_range <- sort(as.numeric(input$pickWertebereich))
+    mainPlot <- mainPlot + xlim(selected_range[1], selected_range[2])
+    mainPlot
+  }, 
+  # dynamic scaling of the plot
+  height = function() {
+    getPlotHeight()
+  },
+  width = function() {
+    session$clientData$output_plot1_width
+  }
+  )
 }
