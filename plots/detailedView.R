@@ -61,3 +61,59 @@ insert_breaks_every_n_chars <- function(s, n = 80) {
   parts <- c(parts, s)
   paste(parts, collapse = "\n")
 }
+
+# Filters all the neccassary dataframes
+filterDataForDetailedView <- function(df_zweck, df_ist, df_soll, rv, selectedTitle) {
+  req(selectedTitle)
+  title <- selectedTitle()
+  
+  if (is.null(title) || title == "") {
+    if (nrow(df_ist) > 0 && "Gesamttitel" %in% colnames(df_ist)) {
+      title <- df_ist$Gesamttitel[1]
+    } else {
+      stop("Title is null or empty, and df_ist does not contain 'Gesamttitel' or is empty.")
+    }
+  }
+  
+  purpose <- df_zweck %>%
+    filter(Gesamttitel == title) %>%
+    pull(Zweckbestimmung)
+  
+  # Get Data and removes Anomalie in year, which ensures a clean x axis.
+  ist_values <- df_ist %>%
+    filter(Gesamttitel == title) %>%
+    gather(key = "year", value = "value_ist", -Gesamttitel) %>%
+    filter(!grepl("Anomalie", year))
+  
+  soll_values <- df_soll %>%
+    filter(Gesamttitel == title) %>%
+    gather(key = "year", value = "value_soll", -Gesamttitel) %>%
+    filter(!grepl("Anomalie", year))
+  
+  combined_df <- left_join(ist_values, soll_values, by = "year") %>%
+    mutate(difference = value_soll - value_ist,
+           fill_color = ifelse(difference < 0, "Negative Differenz", "Positive Differenz"))
+  
+  # Handle NA
+  ist_values <- ist_values %>%
+    na.omit()
+  
+  soll_values <- soll_values %>%
+    na.omit() 
+  
+  # Import anomalies
+  anomalies <- subset(rv$x, Titel == title)
+  
+  soll_anomalies <- anomalies %>%
+    filter(Art == "Soll")
+  
+  ist_anomalies <- anomalies %>%
+    filter(Art == "Ist")
+  
+  diff_anomalies <- anomalies %>%
+    filter(Art == "Diff")
+  
+  # Return all necessary variables for plot generation
+  list(title = title, purpose = purpose, ist_values = ist_values, soll_values = soll_values, combined_df = combined_df,
+       soll_anomalies = soll_anomalies, ist_anomalies = ist_anomalies, diff_anomalies = diff_anomalies)
+}

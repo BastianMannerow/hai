@@ -166,12 +166,6 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  # Create buttons for each entry on y axis
-  output$dynamicButtons <- renderUI({
-    df_scatter <- scatterData()
-    generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getButtonHeight, getbutton_width)
-  })
-  
   
   # Define reactiveVal for selected title
   selectedTitle <- reactiveVal()
@@ -179,73 +173,22 @@ shinyServer(function(input, output, session) {
   
   # Generate the detailed view
   observe({
-    df_scatter <- scatterData() 
-    titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
-    sortedTitelListe <- rev(levels(titelListe))
-    
-    lapply(sortedTitelListe, function(titel) {
-      btn_id <- paste0("button_", gsub(" ", "_", titel))
-      observeEvent(input[[btn_id]], {
-        selectedTitle(titel) # Update the reactive value
-        
-        # Rendering of combined plot
-        output$combinedPlot <- renderPlot({
-          req(selectedTitle())
-          title <- selectedTitle()
-          
-          purpose <- df_zweck %>%
-            filter(title == Gesamttitel) %>%
-            select(Zweckbestimmung)
-          
-          # Get Data and removes Anomalie in year, whch ensures a clean x axis.
-          ist_values <- df_ist %>%
-            filter(Gesamttitel == title) %>%
-            gather(key = "year", value = "value_ist", -Gesamttitel) %>%
-            filter(!grepl("Anomalie", year))
-          
-          soll_values <- df_soll %>%
-            filter(Gesamttitel == title) %>%
-            gather(key = "year", value = "value_soll", -Gesamttitel) %>%
-            filter(!grepl("Anomalie", year))
-          
-          combined_df <- left_join(ist_values, soll_values, by = "year") %>%
-            mutate(difference = value_soll - value_ist,
-                   fill_color = ifelse(difference < 0, "Negative Differenz", "Positive Differenz"))
-          
-          
-          # Handle NA
-          ist_values <- ist_values %>%
-            na.omit()
-          
-          soll_values <- soll_values %>%
-            na.omit() 
-          
-          
-          # Import anomalies
-          anomalies <- subset(rv$x, Titel == title)
-          
-          soll_anomalies <- anomalies %>% 
-            filter(Art == "Soll")
-          
-          ist_anomalies <- anomalies %>% 
-            filter(Art == "Ist")
-          
-          diff_anomalies <- anomalies %>% 
-            filter(Art == "Diff")
-          
-          # Time Series
-          timeSeriesPlot = generateTimeSeriesPlot(soll_values, ist_values, soll_anomalies, ist_anomalies, plot_font_family, normal_text_font_size)
-          
-          # Difference Plot (Second Half)
-          differencePlot = generateDifferencePlot(combined_df, diff_anomalies, plot_font_family, normal_text_font_size)
-          
-          # Combine the Plots
-          title_with_breaks <- insert_breaks_every_n_chars(paste(title, " - ", purpose))
-          combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) + theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
-          
-          return(combinedPlot)
-        })
-      })
+    plot_data <- filterDataForDetailedView(df_zweck, df_ist, df_soll, rv, selectedTitle)
+    tryCatch({
+      # Zeitreihenplot
+      timeSeriesPlot <- generateTimeSeriesPlot(plot_data$soll_values, plot_data$ist_values, plot_data$soll_anomalies, plot_data$ist_anomalies, plot_font_family, normal_text_font_size)
+      
+      # Differenzplot
+      differencePlot <- generateDifferencePlot(plot_data$combined_df, plot_data$diff_anomalies, plot_font_family, normal_text_font_size)
+      
+      # Plots kombinieren
+      title_with_breaks <- insert_breaks_every_n_chars(paste(plot_data$title, " - ", plot_data$purpose))
+      combinedPlot <- timeSeriesPlot / differencePlot + plot_layout(guides = "collect") + plot_annotation(title = title_with_breaks) +
+        theme(plot.margin = margin(1, 1, 1, 1), plot.title = element_text(size = mini_headline_font_size, family = plot_font_family))
+      
+      output$combinedPlot <- renderPlot({ combinedPlot })
+    }, error = function(e) {
+      cat("Es gab einen Fehler bei der Erstellung der Detailansicht: ", e$message, "\n")
     })
   })
   
@@ -279,12 +222,18 @@ shinyServer(function(input, output, session) {
     getButtonWidth(session)
   })
   
-  getButtonHeight <- reactive({
+  getbutton_height <- reactive({
     calculateButtonHeight(normal_text_font_size)
   })
   
   getPlotHeight <- reactive({
-    calculatePlotHeight (input, normal_text_font_size, scatterData, session)
+    calculatePlotHeight (input, scatterData, session, getbutton_height)
+  })
+  
+  # Create buttons for each entry on y axis
+  output$dynamicButtons <- renderUI({
+    df_scatter <- scatterData()
+    generateDynamicButtons(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width)
   })
   
   ## visualize the main plot

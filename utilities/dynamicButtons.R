@@ -1,5 +1,4 @@
 
-
 generateDynamicButtons <- function(df_scatter, df_zweck, selectedTitle, normal_text_font_size, plot_font_family, getbutton_height, getbutton_width) {
   titelListe <- factor(df_scatter$Gesamttitel)
   sortedTitelListe <- rev(levels(titelListe))

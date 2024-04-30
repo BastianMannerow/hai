@@ -14,19 +14,33 @@ getButtonWidth <- function(session) {
 # button height
 calculateButtonHeight <- function(normal_text_font_size) {
   numeric_part <- substr(normal_text_font_size, 1, nchar(normal_text_font_size) - 2)
-  as.numeric(numeric_part) * 3.5
+  calc_temp <- as.numeric(numeric_part) * 3.5
+  height <- calc_temp 
+  return(height)
 }
 
 # calculates plot height
-calculatePlotHeight  <- function(input, normal_text_font_size, scatterData, session) {
-  button_height <- getButtonHeight(normal_text_font_size)
-  num_buttons <- numberOfButtons(scatterData)
-  base_height <- switch(
-    as.character(input$screenSize$height),
-    "1200" = button_height * (num_buttons + 2.6) + 12,
-    "1080" = button_height * (num_buttons + 2.6) + 12,
-    "720" = button_height * (num_buttons + 2.2) + 8,
-    button_height * (num_buttons + 1.8) + 12  # Default case for Apple or other sizes
-  )
-  base_height
+calculatePlotHeight  <- function(input, scatterData, session, getbutton_height) {
+  default_height <- 1080
+  
+  screen_height <- if(!is.null(input$screenSize$height) && length(input$screenSize$height) > 0) {
+    input$screenSize$height
+  } else {
+    return(default_height)
+  }
+  
+  
+  if(input$screenSize$height == 1200) {
+    height <- getbutton_height() * (numberOfButtons(scatterData) + 2.6) + 12
+  }
+  else if(input$screenSize$height == 1080) {
+    height <- getbutton_height() * (numberOfButtons(scatterData) + 2.6) + 12
+  }
+  else if(input$screenSize$height == 720) {
+    height <- getbutton_height() * (numberOfButtons(scatterData) + 2.2) + 8
+  }
+  else{ # Apple
+    height <- getbutton_height() * (numberOfButtons(scatterData) + 1.8) + 12
+  }
+  return(height)
 }
