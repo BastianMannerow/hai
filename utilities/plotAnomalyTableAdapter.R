@@ -1,0 +1,43 @@
+## anomaly toggling to distinguish between user and ai
+toggleAnomaly <- function(title, year, anomalies) {
+  if(any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)) {
+    anomalies$data <- anomalies$data[!(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year), ]
+  } else {
+    anomalies$data <- rbind(anomalies$data, data.frame(Gesamttitel = title, Jahr = year, Anomalie = TRUE))
+  }
+}
+
+## add data to table from clicked points in plot
+setupAnomalyInteractions <- function(input, output, session, rv, curr_art, scatterData, last_click, anomalies) {
+  observeEvent(input$clicked, {
+    art <- if (curr_art() == "df_ist") {
+      "Ist"
+    } else if (curr_art() == "df_soll") {
+      "Soll"
+    } else {
+      "Diff"
+    }
+    
+    pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
+    if (nrow(pointsnear) > 0) {
+      pointsnear$year <- as.character(pointsnear$year)
+      toggleAnomaly(pointsnear$Gesamttitel, as.numeric(pointsnear$year), anomalies)
+      
+      if (!is.null(last_click()) && identical(last_click(), list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))) {
+        rv$x <- rv$x %>% 
+          filter(!(Titel == pointsnear$Gesamttitel & Jahr == pointsnear$year & Wert == pointsnear$value & Art == art))
+        last_click(NULL)
+      } else {
+        rv$x <- rv$x %>% 
+          bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
+        rv$x <- rv$x %>% 
+          mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
+                                    paste(fa("user"), "Nutzer"),
+                                    if_else(startsWith(Ursprung, "AI"),
+                                            paste(fa("microchip"), "KI System"),
+                                            Ursprung)))
+        last_click(list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))
+      }
+    }
+  })
+}

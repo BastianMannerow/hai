@@ -26,6 +26,7 @@ source("utilities/pointsNotVisibleWarning.R")
 source("utilities/importData.R")
 source("utilities/calculateMainPlotHeight.R")
 source("utilities/handleWindowInput.R")
+source("utilities/plotAnomalyTableAdapter.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -61,6 +62,9 @@ shinyServer(function(input, output, session) {
   sourceHandleWindowSize
   
   # ---------------------------------------------------------------------------- Reactive Data
+  ## Make a point unclicked
+  last_click <- reactiveVal(NULL)
+  
   # Define reactiveVal for selected title
   selectedTitle <- reactiveVal()
   
@@ -228,6 +232,8 @@ shinyServer(function(input, output, session) {
     df_scatter <- scatterData()
     observeButtonPress(input, df_scatter, selectedTitle)
   })
+  # Adapter between MainPlot and Anomaly Tabelle
+  setupAnomalyInteractions(input, output, session, rv, curr_art, scatterData, last_click, anomalies)
   
   #------------------------------------------------------------------------------ Visualisation
   ## visualize the main plot
@@ -249,56 +255,4 @@ shinyServer(function(input, output, session) {
     '  table.rows(".selected").remove().draw();',
     '});'
   )
-  #------------------------------------------------------------------------------ Adapter between MainPlot and Tabelle
-  ## anomaly toggling to distinguish between user and ai
-  toggleAnomaly <- function(title, year) {
-    if(any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)) {
-      anomalies$data <- anomalies$data[!(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year), ]
-    } else {
-      anomalies$data <- rbind(anomalies$data, data.frame(Gesamttitel = title, Jahr = year, Anomalie = TRUE))
-    }
-  }
-  
-  ## add data to table from clicked points in plot
-  observeEvent(input$clicked, {
-    if (curr_art() == "df_ist"){
-      art <- "Ist"
-    } else if (curr_art() == "df_soll"){
-      art <- "Soll"
-    } else {
-      art <- "Diff"
-    }
-    
-    pointsnear <- nearPoints(scatterData(), input$clicked, threshold = 5, maxpoints = 1)
-    if (nrow(pointsnear) > 0) {
-      pointsnear$year <- as.character(pointsnear$year)
-      toggleAnomaly(pointsnear$Gesamttitel, as.numeric(pointsnear$year))
-      
-      # check if already clicked
-      if (!is.null(last_click()) && identical(last_click(), list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))) {
-        # delete for next clicking
-        rv$x <- rv$x %>% 
-          filter(!(Titel == pointsnear$Gesamttitel & Jahr == pointsnear$year & Wert == pointsnear$value & Art == art))
-        last_click(NULL)
-      } else {
-        rv$x <- rv$x %>% 
-          bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
-        rv$x <- rv$x %>% 
-          mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
-                                    paste(fa("user"), "Nutzer"),
-                                    if_else(startsWith(Ursprung, "AI"),
-                                            paste(fa("microchip"), "KI System"),
-                                            Ursprung)))
-        last_click(list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))
-      }
-    }
-  })
-  
-  ## Make a point unclicked
-  last_click <- reactiveVal(NULL)
 })
-
-
-### open RDS Files
-# filename <- file.choose()
-# resultData <- readRDS(filename)
