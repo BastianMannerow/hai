@@ -24,6 +24,7 @@ source("utilities/slider.R")
 source("utilities/pointsNotVisibleWarning.R")
 source("utilities/importData.R")
 source("utilities/calculateMainPlotHeight.R")
+source("utilities/handleWindowInput.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -54,40 +55,9 @@ anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = 
 
 ### set up server
 shinyServer(function(input, output, session) {
-  # ---------------------------------------------------------------------------
-  # Receiving the screen Input
-  getPlotWidth <- reactive({
-    #width <- 1200 * (1903/input$screenSize$width)
-    width <- 1200 * (input$windowSize$width/1903)
-    #width <- 1200
-    return(width)
-  })
-  
-  observeEvent(input$screenSize, {
-    screen_width <- input$screenSize$width
-    screen_height <- input$screenSize$height
-    message(paste("Aktuelle Bildschirmauflösung: Breite =", screen_width, "Höhe =", screen_height))
-  })
-  
-  observe({
-    width <- input$windowSize$width
-    height <- input$windowSize$height
-    # message(paste("Aktuelle Fenstergröße: Breite =", width, "Höhe =", height))
-  })
-  
-  # triggers refreshing of the mainPlot
-  observe({
-    invalidateLater(1000, session) # checks all 1000 milliseconds
-    session$clientData$output_plot1_width
-  })
-  
-  observe({
-    width <- input$windowSize$width
-    height <- input$windowSize$height
-    session$clientData$output_plot1_width
-  })
-  # ---------------------------------------------------------------------------
-  
+  # Handling of the screen size and triggers refreshing of the mainPlot
+  sourceRefreshPlot(session)
+  sourceHandleWindowSize(input, session)
   
   ## reading for selecting dataset reactive: https://stackoverflow.com/questions/57128917/update-pickerinput-by-using-updatepickerinput-in-shiny
   # reaktiver Platzhalter für aktuelles df
