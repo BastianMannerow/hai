@@ -27,13 +27,8 @@ importDFZweck <- function(){
   df_zweck <- read.table("./Data/hh_sh_ep14_zweck.csv", sep = ",", header = TRUE, 
                          fileEncoding = "UTF-8", 
                          colClasses = c(Kapitel="character", Gesamttitel="character"))
+  df_zweck <- formatGesamttitelName(df_zweck)
 }
-
-# Gesamttitel still needs space in between (Issue from Christiane)
-#df_ist <- df_ist %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_soll <- df_soll %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_diff <- df_diff %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
-#df_zweck <- df_zweck %>% mutate(Gesamttitel = paste(substr(Gesamttitel,1,4), substr(Gesamttitel,5,6), substr(Gesamttitel,7,9), sep = " "))
 
 # Adding the column Anomalies for each year to be able to distinguish between AI and Human anomaly
 addingAnomalyColumn <- function(df){
@@ -54,6 +49,25 @@ importDFAnomaly <- function() {
                               if_else(startsWith(Ursprung, "AI"),
                                       paste(fa("microchip"), "KI System"),
                                       Ursprung)))
-  
   return(df_anomaly)
 }
+
+# changes the string of Gesamttitel
+formatGesamttitelName <- function(df) {
+  # fake AI uses Titel as column name
+  target_col <- if ("Gesamttitel" %in% names(df)) {
+    "Gesamttitel"
+  } else if ("Titel" %in% names(df)) {
+    "Titel"
+  } else {
+    stop("Es scheint einen Fehler im Dataframe zu geben.")
+  }
+  
+  df <- df %>%
+    mutate(!!target_col := paste(substr(!!sym(target_col), 1, 4),
+                                 substr(!!sym(target_col), 5, 8),
+                                 substr(!!sym(target_col), 9, nchar(!!sym(target_col))),
+                                 sep = " "))
+  return(df)
+}
+
