@@ -103,7 +103,7 @@ shinyServer(function(input, output, session) {
   selectedTitle <- reactiveVal()
   
   # an anomaly dataframe to distinguish between AI and User
-  anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = numeric(), Anomalie = logical()))
+  anomalies <- reactiveValues(data = data.frame(Gesamttitel = character(), Jahr = numeric(), Anomalie = logical(), Art = character()))
   
   # the dataframe for the anomalies presented in the table
   anomaly_table <- reactiveValues(x = df_anomaly)
@@ -116,7 +116,7 @@ shinyServer(function(input, output, session) {
     get(input$pickArt)
   })
   
-  # save current choices from pickTitel in a reactive value, to save them as selected 
+  # save current choices from pickTitel in a reactive value
   current_titel <- reactiveVal()
   observe({
     current_titel(input$pickTitel)

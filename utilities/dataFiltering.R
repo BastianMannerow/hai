@@ -1,30 +1,36 @@
 
-filterForAnomalies <- function(input, df, detectedAnomalies){
+# analyses user and ai detected anomalies and filters the dataframe accordingly to the user input
+filterForAnomalies <- function(input, df, detectedAnomalies, userPickedAnomalies){
+  
   # for initial loading (would crash if not implemented)
   if (is.null(input$pickAnomalyFilter)) {
-    print("pickAnomalyFilter is NULL")
     return(df)  
   } else {
     # Logging for filter mode
-    print(paste("Current filter mode:", input$pickAnomalyFilter))
     
     # Handles user input for Art
-    art_mapping <- switch(input$pickArt,
+    nameTransfer <- switch(input$pickArt,
                           "df_soll" = "Soll",
                           "df_ist" = "Ist",
                           "df_diff" = "Diff")
     
     anomaly_titles <- detectedAnomalies %>% 
-      dplyr::filter(Art == art_mapping) %>%
+      dplyr::filter(Art == nameTransfer) %>%
       dplyr::pull(Titel)
+    
+    user_anomaly_titles <- userPickedAnomalies %>% 
+      dplyr::filter(Art == input$pickArt) %>%
+      dplyr::pull(Gesamttitel)
+    
+    all_titles <- c(anomaly_titles, user_anomaly_titles)
     
     # Filter the data based on user selection
     dataframe <- switch(input$pickAnomalyFilter,
                         "titlesWithAnomaly" = {
-                          df %>% dplyr::filter(Gesamttitel %in% anomaly_titles)
+                          df %>% dplyr::filter(Gesamttitel %in% all_titles)
                         },
                         "titlesWithNoAnomaly" = {
-                          df %>% dplyr::filter(!(Gesamttitel %in% anomaly_titles))
+                          df %>% dplyr::filter(!(Gesamttitel %in% all_titles))
                         },
                         df  # if all titles is selected, return the unfiltered df
     )
@@ -85,13 +91,14 @@ createScatterData <- function(input, reac_data, anomalies, detectedAnomalies) {
       }
     })
     
+    print(anomalies$Data)
     # override persistent anomaly clicks
     df_scatter$anomaly <- mapply(function(title, year) {
       any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)
     }, df_scatter$Gesamttitel, df_scatter$year)
     
     # Filter for anomalies
-    df_scatter <- filterForAnomalies(input, df_scatter, detectedAnomalies)
+    df_scatter <- filterForAnomalies(input, df_scatter, detectedAnomalies, anomalies$data)
     
     return(df_scatter)
   })
