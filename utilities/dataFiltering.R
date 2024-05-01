@@ -1,29 +1,35 @@
 
-#  inputId = "pickAnomalyFilter",
-#  label = "Filtern Sie nach Anomalien.",
-#  choiceNames = c("Alle", "Keine Anomalie", "Anomalie"),
-#  choiceValues = c("allTitles", "titlesWithNoAnomaly", "titlesWithAnomaly"),
-#  justified = TRUE
-
 filterForAnomalies <- function(input, df, detectedAnomalies){
-    if (is.null(input$pickAnomalyFilter)) {
-      print("pickAnomalyFilter is NULL")
-      return(df)  # Rückgabe des ursprünglichen df, wenn kein Filterwert vorhanden ist
-    } else {
-      print(paste("Current filter mode:", input$pickAnomalyFilter))
-      dataframe <- switch(input$pickAnomalyFilter,
-                          "titlesWithAnomaly" = {
-                            df %>% filter(Gesamttitel %in% detectedAnomalies$Gesamttitel)
-                          },
-                          "titlesWithNoAnomaly" = {
-                            df %>% filter(!Gesamttitel %in% detectedAnomalies$Gesamttitel)
-                          },
-                          df  # Standardfall, wenn 'allTitles' oder ein anderer Wert ausgewählt ist
-      )
-      print("Filtered dataframe based on anomalies:")
-      print(dataframe)
-      return(dataframe)
-    }
+  # for initial loading (would crash if not implemented)
+  if (is.null(input$pickAnomalyFilter)) {
+    print("pickAnomalyFilter is NULL")
+    return(df)  
+  } else {
+    # Logging for filter mode
+    print(paste("Current filter mode:", input$pickAnomalyFilter))
+    
+    # Handles user input for Art
+    art_mapping <- switch(input$pickArt,
+                          "df_soll" = "Soll",
+                          "df_ist" = "Ist",
+                          "df_diff" = "Diff")
+    
+    anomaly_titles <- detectedAnomalies %>% 
+      dplyr::filter(Art == art_mapping) %>%
+      dplyr::pull(Titel)
+    
+    # Filter the data based on user selection
+    dataframe <- switch(input$pickAnomalyFilter,
+                        "titlesWithAnomaly" = {
+                          df %>% dplyr::filter(Gesamttitel %in% anomaly_titles)
+                        },
+                        "titlesWithNoAnomaly" = {
+                          df %>% dplyr::filter(!(Gesamttitel %in% anomaly_titles))
+                        },
+                        df  # if all titles is selected, return the unfiltered df
+    )
+    return(dataframe)
+  }
 }
 
 

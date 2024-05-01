@@ -124,7 +124,7 @@ shinyServer(function(input, output, session) {
   })
   
   ## filter data for the main plot
-  scatterData <- createScatterData(input, pickedCategoryDataframe, anomalies, selected())
+  scatterData <- createScatterData(input, pickedCategoryDataframe, anomalies, anomaly_table$x)
   
   # dataframe for the sliders
   sliderDataframe <- createSliderDataframe(input, df_ist, df_soll, df_diff)
