@@ -1,4 +1,32 @@
 
+#  inputId = "pickAnomalyFilter",
+#  label = "Filtern Sie nach Anomalien.",
+#  choiceNames = c("Alle", "Keine Anomalie", "Anomalie"),
+#  choiceValues = c("allTitles", "titlesWithNoAnomaly", "titlesWithAnomaly"),
+#  justified = TRUE
+
+filterForAnomalies <- function(input, df, detectedAnomalies){
+    if (is.null(input$pickAnomalyFilter)) {
+      print("pickAnomalyFilter is NULL")
+      return(df)  # Rückgabe des ursprünglichen df, wenn kein Filterwert vorhanden ist
+    } else {
+      print(paste("Current filter mode:", input$pickAnomalyFilter))
+      dataframe <- switch(input$pickAnomalyFilter,
+                          "titlesWithAnomaly" = {
+                            df %>% filter(Gesamttitel %in% detectedAnomalies$Gesamttitel)
+                          },
+                          "titlesWithNoAnomaly" = {
+                            df %>% filter(!Gesamttitel %in% detectedAnomalies$Gesamttitel)
+                          },
+                          df  # Standardfall, wenn 'allTitles' oder ein anderer Wert ausgewählt ist
+      )
+      print("Filtered dataframe based on anomalies:")
+      print(dataframe)
+      return(dataframe)
+    }
+}
+
+
 # dataframe for the sliders Zeitraum and Wertebereich
 createSliderDataframe <- function(input, df_ist, df_soll, df_diff) {
   reactive({
@@ -19,7 +47,7 @@ createSliderDataframe <- function(input, df_ist, df_soll, df_diff) {
 }
 
 ## filter data for scatter plot
-createScatterData <- function(input, reac_data, anomalies) {
+createScatterData <- function(input, reac_data, anomalies, detectedAnomalies) {
   reactive({
     selected_years <- as.numeric(input$pickZeitraum)
     selected_values <- input$pickWertebereich
@@ -55,6 +83,10 @@ createScatterData <- function(input, reac_data, anomalies) {
     df_scatter$anomaly <- mapply(function(title, year) {
       any(anomalies$data$Gesamttitel == title & anomalies$data$Jahr == year)
     }, df_scatter$Gesamttitel, df_scatter$year)
+    
+    # Filter for anomalies
+    df_scatter <- filterForAnomalies(input, df_scatter, detectedAnomalies)
+    
     return(df_scatter)
   })
 }

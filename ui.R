@@ -169,6 +169,15 @@ ui <- fluidPage(includeCSS("www/style.css"),
       ),
       # UI Output for the warning message of out of range data points
       uiOutput("outOfRangeMessage"),
+      
+      radioGroupButtons(
+        inputId = "pickAnomalyFilter",
+        label = "Filtern Sie nach Anomalien.",
+        choiceNames = c("Alle", "Keine Anomalie", "Anomalie"),
+        choiceValues = c("allTitles", "titlesWithNoAnomaly", "titlesWithAnomaly"),
+        justified = TRUE,
+        selected = "allTitles"
+      ),
     ), # Ende Input column
     column(9, # Plot-Spalte in fluidRow 2
       p(HTML(paste(fa("magnifying-glass-plus"))),
