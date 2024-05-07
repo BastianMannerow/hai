@@ -4,18 +4,21 @@ library(dplyr)
 importDFIst <- function(){
   df_ist <- read_csv("./Data/hh_sh_ep14_ist.csv", col_types = cols(Gesamttitel = col_character()))
   addingAnomalyColumn(df_ist)
+  df_ist <- formatGesamttitelName(df_ist)
   return(df_ist)
 }
 
 importDFSoll <- function(){
   df_soll <- read_csv("./Data/hh_sh_ep14_soll.csv", col_types = cols(Gesamttitel = col_character()))
   addingAnomalyColumn(df_soll)
+  df_soll <- formatGesamttitelName(df_soll)
   return(df_soll)
 }
 
 importDFDiff <- function(){
   df_diff <- read_csv("./Data/hh_sh_ep14_diff.csv", col_types = cols(Gesamttitel = col_character()))
   addingAnomalyColumn(df_diff)
+  df_diff <- formatGesamttitelName(df_diff)
   return(df_diff)
 }
 
@@ -41,7 +44,7 @@ addingAnomalyColumn <- function(df){
 importDFAnomaly <- function() {
   # Laden des Datensatzes
   df_anomaly <- read_csv("./Data/hh_sh_ep14_fakeAI.csv", col_types = "cccdcc")
-  
+  df_anomaly <- formatGesamttitelName(df_anomaly)
   # Hinzufügen von Icons basierend auf dem Ursprung der Daten
   df_anomaly <- df_anomaly %>% 
     mutate(Ursprung = if_else(startsWith(Ursprung, "User"),
@@ -65,8 +68,8 @@ formatGesamttitelName <- function(df) {
   
   df <- df %>%
     mutate(!!target_col := paste(substr(!!sym(target_col), 1, 4),
-                                 substr(!!sym(target_col), 5, 8),
-                                 substr(!!sym(target_col), 9, nchar(!!sym(target_col))),
+                                 substr(!!sym(target_col), 5, 7),
+                                 substr(!!sym(target_col), 8, nchar(!!sym(target_col))),
                                  sep = " "))
   return(df)
 }

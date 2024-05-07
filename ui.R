@@ -12,15 +12,16 @@ library(readxl)
 library(DT)
 library(shinyjs)
 library(fontawesome)
+# own sources
+source("utilities/importData.R")
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
 showtext_auto()
 options(scipen = 999)
 
 # load data 
-df_kapitel <- read_csv("./Data/hh_sh_ep14_kapitel.csv", col_types = cols(Kapitel = col_character()))
-df_zweck <- read_csv("./Data/hh_sh_ep14_zweck.csv", col_types = cols(Kapitel = col_character(), Gesamttitel = col_character()))
-df_zweck <- slice(df_zweck, 21:40) # subset (20 rows), can be uncommented later
+df_kapitel <- importDFKapitel()
+df_zweck <- importDFZweck()
 
 ### ui
 ui <- fluidPage(includeCSS("www/style.css"),
@@ -139,21 +140,23 @@ ui <- fluidPage(includeCSS("www/style.css"),
       pickerInput(
         inputId = "pickKapitel",
         label = "Kapitel - Auswahl",
-        choices = df_kapitel$Kapitel[1:3],
+        choices = df_kapitel$Kapitel,
         multiple = TRUE,
-        selected = df_kapitel$Kapitel[1:3]
+        selected = df_kapitel$Kapitel
       ),
       pickerInput(
         inputId = "pickTitel",
         label = "Titel - Auswahl",
         choices = df_zweck$Gesamttitel,
-        selected = df_zweck$Gesamttitel,
+        selected = c("1402 119 99", "1402 631 02", "1402 919 02", "1402 812 46", "1403 359 05", 
+                     "1403 685 01", "1404 685 02", "1404 534 02", "1405 533 01", "1405 812 01"),
         multiple = TRUE,
         options = list(
             'actions-box' = TRUE,
             'deselect-all-text' = "Alle abwählen",
             'select-all-text' = "Alle auswählen",
-            'none-selected-text' = "Keine Titel ausgewählt")
+            'none-selected-text' = "Keine Titel ausgewählt",
+            'live-search' = TRUE)
       ),
       sliderTextInput(
         inputId = "pickZeitraum",

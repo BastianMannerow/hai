@@ -45,5 +45,14 @@ setupAnomalyInteractions <- function(input, output, session, rv, curr_art, scatt
         last_click(list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))
       }
     }
+    showModal(modalDialog(
+      title = "Der Punkt wurde von Ihnen als Anomalie markiert.",
+      "Die Tabelle wurde aktualisiert. Klicken Sie erneut auf den Punkt, 
+      um die Auswahl rückgängig zu machen oder löschen Sie das Element über die Tabelle.",
+      easyClose = TRUE,
+      fade = TRUE,
+      footer = NULL,
+      size = "s"
+    ))
   })
 }

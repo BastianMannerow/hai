@@ -51,10 +51,9 @@ df_kapitel <- importDFKapitel()
 df_zweck <- importDFZweck()
 df_anomaly <- importDFAnomaly()
 
-### set up server
 shinyServer(function(input, output, session) {
   # Handling of the screen size and triggers refreshing of the mainPlot
-  sourceRefreshPlot(session)
+  #sourceRefreshPlot(session)
   
   # Varibales which force the mainPlot to refresh
   refreshMainPlot <- reactiveVal(TRUE)
