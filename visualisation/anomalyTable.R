@@ -40,6 +40,18 @@ setupDataTableInteractions <- function(rv, session, input) {
   })
   
   observeEvent(input[["remove"]], {
+    showModal(modalDialog(
+      title="Möchten Sie die markierten Einträge aus der Tabelle löschen?",
+      "Die dazugehörigen Punkte werden im oberen Plot dann nicht mehr als Anomalie gekennzeichnet sein.
+      Bitte bestätigen Sie.",
+      footer = tagList(actionButton("confirmDelete", "Löschen bestätigen"),
+                       modalButton("Abbrechen")
+      )
+    ))
+  })
+  
+  observeEvent(input$confirmDelete, {
+    removeModal()
     req(input[["mydata_rows_selected"]])
     indices <- input[["mydata_rows_selected"]]
     rv$x <- rv$x %>% filter(!row_number() %in% indices)

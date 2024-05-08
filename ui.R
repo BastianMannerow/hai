@@ -190,6 +190,7 @@ ui <- fluidPage(includeCSS("www/style.css"),
       #--------------------------------------------
       # Adjusts the plot with the corresponding buttons
       tags$head(
+        uiOutput("css"),
         tags$style(HTML("
         .shiny-fluid-row {
           display: flex;
@@ -286,7 +287,7 @@ ui <- fluidPage(includeCSS("www/style.css"),
           dataTableOutput('mydata'), 
           class = "text-center"
         ),
-        actionButton("remove", "Markierte Elemente löschen", style = "margin-top: 20px")
+        actionButton("remove", "Markierte Einträge löschen", style = "margin-top: 20px")
       )
     ),
     # the detailed view of a title

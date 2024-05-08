@@ -33,6 +33,15 @@ setupAnomalyInteractions <- function(input, output, session, rv, curr_art, scatt
         rv$x <- rv$x %>% 
           filter(!(Titel == pointsnear$Gesamttitel & Jahr == pointsnear$year & Wert == pointsnear$value & Art == art))
         last_click(NULL)
+        
+        showModal(modalDialog(
+          title = "Der Punkt wurde von Ihnen abgewählt.",
+          "Die Tabelle wurde aktualisiert und der Eintrag entfernt.",
+          easyClose = TRUE,
+          fade = TRUE,
+          footer = NULL,
+          size = "s"
+        ))
       } else {
         rv$x <- rv$x %>% 
           bind_rows(tibble(Ursprung = "User", Titel = pointsnear$Gesamttitel, Jahr = pointsnear$year, Wert = pointsnear$value, Art = art, Kommentar = ""))
@@ -43,16 +52,18 @@ setupAnomalyInteractions <- function(input, output, session, rv, curr_art, scatt
                                             paste(fa("microchip"), "KI System"),
                                             Ursprung)))
         last_click(list(pointsnear$Gesamttitel, pointsnear$year, pointsnear$value, art))
+        
+        showModal(modalDialog(
+          title = "Der Punkt wurde von Ihnen als Anomalie markiert.",
+          "Er erscheint als neuer Eintrag in der Übersichtstabelle. Klicken Sie erneut auf den Punkt, 
+          um die Auswahl rückgängig zu machen oder löschen Sie den Eintrag über die Tabelle.",
+          easyClose = TRUE,
+          fade = TRUE,
+          footer = NULL,
+          size = "s"
+        ))
       }
     }
-    showModal(modalDialog(
-      title = "Der Punkt wurde von Ihnen als Anomalie markiert.",
-      "Die Tabelle wurde aktualisiert. Klicken Sie erneut auf den Punkt, 
-      um die Auswahl rückgängig zu machen oder löschen Sie das Element über die Tabelle.",
-      easyClose = TRUE,
-      fade = TRUE,
-      footer = NULL,
-      size = "s"
-    ))
+    
   })
 }

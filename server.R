@@ -169,6 +169,8 @@ shinyServer(function(input, output, session) {
   output$plot1 <- generateMainPlot(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size, refreshMainPlot)
   # Hover Info
   output$hover_info <- generateMainPlotHoverInfo(input, scatterData, nearPoints)
+  # Cursor changes to pointer when Hover Info is displayed
+  output$css <- changeMainPlotHoverType(input, scatterData, nearPoints)
   
   # Generate the detailed view
   observeEvent(c(selectedTitle(), anomaly_table$x), {

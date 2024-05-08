@@ -108,6 +108,24 @@ generateMainPlotHoverInfo <- function(input, scatterData, nearPoints) {
     )
   })
 }
+# Cursor changes to pointer when Hover Info is displayed
+changeMainPlotHoverType <- function(input, scatterData, nearPoints) {
+  renderUI({
+    hover <- input$plot_hover 
+    if (nrow(scatterData()) == 0) return(NULL)
+    point <- nearPoints(scatterData(), hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+    if (nrow(point) == 0) {
+      css_string <- "
+        #plot1 {  
+        cursor: crosshair;}"
+    } else {
+      css_string <- "
+        #plot1 {  
+        cursor: pointer;}"
+    }
+    tags$style(HTML(css_string))
+  })
+}
 
 # toggles the view based on the chosen chapter
 updateTitleChoices <- function(input, session, df_zweck, current_titel) {
