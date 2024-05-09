@@ -3,39 +3,49 @@
 renderMainPlot <- function(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected, refreshMainPlot){
   colors <- c("AI - Anomalie" = "red", "Vorjahre" = "#838383", "Aktuell" = "#197084", "User - Anomalie" = "red", "User - Anomalie - Aktuell" = "#197084")
   
-  mainPlot <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) + 
-    
-    # ai anomaly in the background, to ensure it doesnt cover nearby points
-    geom_point(data = selected(), aes(x = value, y = Gesamttitel, colour = "AI - Anomalie"), fill = "white", shape = 21, size = 5, stroke = 1.0) + # AI selected
-    
+  mainPlot <- ggplot(df_scatter, aes(x = value, y = Gesamttitel)) +
     # normal cases
-    geom_point(aes(colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year), size = 4, alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2)) +
-    
-    # complex conditions for colouring the user anomalies based on its year
-    geom_point(data = selected(), aes(x = value, y = Gesamttitel, 
-                                      colour = ifelse(selected()$Ursprung == "TRUE" & selected()$year == as.character(last_year), "User - Anomalie - Aktuell", "User - Anomalie")), fill = "red", shape = 21, size = 5, 
-                                      stroke = ifelse(selected()$Ursprung == "TRUE" & selected()$year == as.character(last_year), 1.0, 0.1), 
-                                      alpha = ifelse(selected()$Ursprung == "TRUE", 1, 0), size = 4)+
-    
-    
+    geom_point(aes(
+      colour = factor(ifelse(df_scatter$year == as.character(last_year), "Aktuell", "Vorjahre")), group = year),
+      size = 4, 
+      alpha = ifelse(df_scatter$year == as.character(last_year), 1, 0.2))
+  
+  if (nrow(selected) > 0) {
+    mainPlot <- mainPlot +
+      # ai anomaly in the background, to ensure it doesnt cover nearby points
+      geom_point(data = selected, aes(x = value, y = Gesamttitel, 
+                                      colour = "AI - Anomalie"), 
+                 fill = "white", 
+                 shape = 21, 
+                 size = 5, 
+                 stroke = 1.0) + # AI selected
+      # complex conditions for colouring the user anomalies based on its year
+      geom_point(data = selected, aes(x = value, y = Gesamttitel, 
+                                      colour = ifelse(selected$Ursprung == "TRUE" & selected$year == as.character(last_year), "User - Anomalie - Aktuell", "User - Anomalie")), fill = "red", shape = 21, size = 5, 
+                 stroke = ifelse(selected$Ursprung == "TRUE" & selected$year == as.character(last_year), 1.0, 0.1), 
+                 alpha = ifelse(selected$Ursprung == "TRUE", 1, 0), size = 4)
+  }
+  
+  mainPlot <- mainPlot +
     labs(title = scatterTitle(),
          subtitle = "Einzelplan 14",
          caption = ifelse(refreshMainPlot(), "Daten des Landes Schleswig-Holstein (aktuelles Jahr)", "Daten des Landes Schleswig-Holstein (aktuelles Jahr) ")) + # useless but forces a refresh
     theme(plot.title = element_text(family = plot_font_family, size = headline_font_size, color = "gray16"),
-          plot.subtitle = element_text(family = plot_font_family, size = normal_text_font_size ),
+          plot.subtitle = element_text(family = plot_font_family, size = normal_text_font_size),
           panel.background = element_rect(fill = "grey98"),
-          axis.text.x = element_text(family = plot_font_family, size = normal_text_font_size ),
+          axis.text.x = element_text(family = plot_font_family, size = normal_text_font_size),
           axis.text.y = element_blank(),
           axis.title.x = element_blank(),
           axis.ticks.x = element_line(color = "grey40"),
           axis.ticks.y = element_line(color = "grey40"),
           axis.title.y = element_blank(),
-          plot.caption = element_text(family = plot_font_family, color = "gray12", size = normal_text_font_size )) +
+          plot.caption = element_text(family = plot_font_family, color = "gray12", size = normal_text_font_size)) +
     scale_color_manual(values = colors) +
     guides(colour = guide_legend(title = "Legende"))
   
   return(mainPlot)
 }
+
 
 generateMainPlot <- function(scatterData, input, session, getPlotHeight, selected, scatterTitle, plot_font_family, headline_font_size, normal_text_font_size, refreshMainPlot) {
   renderPlot({
@@ -58,7 +68,14 @@ generateMainPlot <- function(scatterData, input, session, getPlotHeight, selecte
     })
     last_year <- max(last_years, na.rm = TRUE)
     
-    mainPlot = renderMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, selected, refreshMainPlot)
+    # handle if anomalies are unselected by clearing selected
+    if (input$pickAnomalyFilter == "titlesWithNoAnomaly") {
+      anomalies_by_filter <- data.frame(value = numeric(0), Gesamttitel = character(0), stringsAsFactors = FALSE)
+    } else {
+      anomalies_by_filter <- selected()
+    }
+    # draw the final plot
+    mainPlot = renderMainPlot(df_scatter, last_year, plot_font_family, headline_font_size, normal_text_font_size, scatterTitle, anomalies_by_filter, refreshMainPlot)
     
     selected_range <- sort(as.numeric(input$pickWertebereich))
     mainPlot <- mainPlot + xlim(selected_range[1], selected_range[2])
