@@ -51,6 +51,9 @@ generateDifferencePlot <- function(combined_df, diff_anomalies, plot_font_family
   # Illiminate false anomaly entries
   combined_df$Anomalie <- ifelse(combined_df$year %in% diff_anomalies$Jahr, "Anomalie", "Negative Differenz")
   
+  # Remove NA
+  combined_df <- na.omit(combined_df)
+  
   detailPlot <- ggplot(combined_df, aes(x = year, y = difference, fill = Anomalie)) +
     geom_bar(stat = "identity", aes(fill = ifelse(difference > 0, "Positive Differenz", Anomalie))) +
     geom_hline(yintercept = 0, linetype = "dashed") +
