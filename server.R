@@ -26,6 +26,7 @@ source("utilities/calculateMainPlotHeight.R")
 source("utilities/handleWindowInput.R")
 source("utilities/plotAnomalyTableAdapter.R")
 source("utilities/dataFiltering.R")
+source("utilities/toggleTitleDetails.R")
 
 ### load Roboto font and change scale view
 font_add_google("Roboto Condensed", family = "Roboto")
@@ -52,9 +53,6 @@ df_zweck <- importDFZweck()
 df_anomaly <- importDFAnomaly()
 
 shinyServer(function(input, output, session) {
-  # Handling of the screen size and triggers refreshing of the mainPlot
-  #sourceRefreshPlot(session)
-  
   # Varibales which force the mainPlot to refresh
   refreshMainPlot <- reactiveVal(TRUE)
   lastDimensions <- reactiveValues(width = 1, height = 1)
@@ -62,7 +60,12 @@ shinyServer(function(input, output, session) {
   observe_external(session, lastDimensions, refreshMainPlot)
   
   # ---------------------------------------------------------------------------- Reactive Data
-  ## Make a point unclicked
+  # Handles toggling in Titel im Detail
+  titleDetails <- reactiveValues(
+    titlesList = list(),
+  )
+  
+  # Make a point unclicked
   last_click <- reactiveVal(NULL)
   
   # Handles the data filtering based on user input
@@ -129,6 +132,11 @@ shinyServer(function(input, output, session) {
   sliderDataframe <- createSliderDataframe(input, df_ist, df_soll, df_diff)
   
   #------------------------------------------------------------------------------ Functionality
+  # Handle toggling for Titel im Detail
+  navigate_left(input, selectedTitle, titleDetails)
+  navigate_right(input, selectedTitle, titleDetails)
+  output$titleDetailNavigation <- titleDetailButtonDesign(titleDetails, selectedTitle)
+  
   # when pickKapitel is changed, the choices for pickTitel are changed accordingly
   updateTitleChoices(input, session, df_zweck, current_titel)
   
@@ -159,7 +167,7 @@ shinyServer(function(input, output, session) {
   # Checks if a dynamic button was pressed
   observe({
     df_scatter <- scatterData()
-    observeButtonPress(input, df_scatter, selectedTitle)
+    observeButtonPress(input, df_scatter, selectedTitle, titleDetails)
   })
   # Adapter between MainPlot and Anomaly Table
   setupAnomalyInteractions(input, output, session, anomaly_table, curr_art, scatterData, last_click, anomalies)

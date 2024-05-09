@@ -27,7 +27,7 @@ generateDynamicButtons <- function(df_scatter, df_zweck, selectedTitle, normal_t
   do.call(tagList, buttons)
 }
 
-observeButtonPress <- function(input, df_scatter, selectedTitle) {
+observeButtonPress <- function(input, df_scatter, selectedTitle, titleDetails) {
   titelListe <- factor(unique(df_scatter$Gesamttitel), levels = unique(df_scatter$Gesamttitel))
   sortedTitelListe <- rev(levels(titelListe))
   
@@ -35,9 +35,13 @@ observeButtonPress <- function(input, df_scatter, selectedTitle) {
     btn_id <- paste0("button_", gsub(" ", "_", titel))
     observeEvent(input[[btn_id]], {
       selectedTitle(titel)
+      # handle duplicates
+      titleDetails$titlesList <- titleDetails$titlesList[titleDetails$titlesList != titel]
+      titleDetails$titlesList <- c(titleDetails$titlesList, titel)
     })
   })
 }
+
 
 # Logging
 if (interactive()) {

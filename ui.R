@@ -292,10 +292,11 @@ ui <- fluidPage(includeCSS("www/style.css"),
     ),
     # the detailed view of a title
     column(6,
-      wellPanel(
-        h3("Titel im Detail"),
-        plotOutput("combinedPlot")
-      )
+           wellPanel(
+             h3("Titel im Detail"),
+             plotOutput("combinedPlot"),
+             uiOutput("titleDetailNavigation")
+           )
     )
   )
 )
