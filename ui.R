@@ -128,7 +128,7 @@ ui <- fluidPage(includeCSS("www/style.css"),
   fluidRow(class = "Selection Column",
            column(3, #fluidRow 2, innere mit Input-Column
       p(HTML(paste(fa("filter"))),
-        "Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an."
+        "Passen Sie die Filter-Optionen für die Graphik nach Ihrem Bedarf an.\nHinweis: Die Ist- und Differenzwerte stehen nur bis zum Jahr 2020 zur Verfügung."
       ),
       radioGroupButtons(
         inputId = "pickArt",
@@ -282,7 +282,7 @@ ui <- fluidPage(includeCSS("www/style.css"),
   fluidRow(
     column(6,
       wellPanel(
-        h3("Tabelle: Identifizierte Ausreißer"),
+        h3("Identifizierte Ausreißer"),
         div(
           dataTableOutput('mydata'), 
           class = "text-center"

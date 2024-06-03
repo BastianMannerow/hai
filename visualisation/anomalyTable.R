@@ -8,7 +8,7 @@ generateAnomalyTable <- function(rv) {
               extensions = "Buttons", 
               editable = list(target = "cell", disable = list(columns = c(0, 1, 2, 3, 4))),
               class = 'compact stripe', 
-              caption = "Hier erscheinen Ihre ausgewählten Datenpunkte. Ergänzen Sie im Kommentar, warum Sie den Datenpunkt als Ausreißer werten. Sie können Einträge auch löschen.",
+              caption = "In dieser Tabelle sind die von der KI als Ausreißer identifizierten Werte aufgelistet. Hier erscheinen außerdem die von Ihnen im Punktediagramm ausgewählten auffälligen Werte. Ergänzen Sie im Kommentarfeld gern, weshalb Sie den jeweiligen Punkt als Ausreißer markiert haben (per Doppelklick kann man das Feld bearbeiten).",
               rownames = FALSE, 
               options = list(
                 paging = FALSE,
