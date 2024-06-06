@@ -6,7 +6,6 @@ filterForAnomalies <- function(input, df, detectedAnomalies, userPickedAnomalies
   if (is.null(input$pickAnomalyFilter)) {
     return(df)  
   } else {
-    # Logging for filter mode
     
     # Handles user input for Art
     nameTransfer <- switch(input$pickArt,
